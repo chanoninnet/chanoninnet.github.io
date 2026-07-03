@@ -86,11 +86,11 @@ TYPES: BEGIN OF ty_output,
          waerk     TYPE vbak-waerk,
          werks     TYPE vbap-werks,
          wmeng     TYPE vbep-wmeng,
-         ktext     TYPE c LENGTH 40,
+         ktext     TYPE vbak-ktext,
          augru     TYPE vbak-augru,
          abgru     TYPE vbap-abgru,
          awahr     TYPE vbap-awahr,
-         adrnr     TYPE vbak-adrnr,
+         adrnr     TYPE adrnr,
          vbtyp     TYPE vbak-vbtyp,
          shkzg     TYPE vbap-shkzg,
          activ     TYPE c LENGTH 1,
@@ -569,8 +569,8 @@ FORM fill_row USING is_vbak TYPE vbak
   gs_output-waerk    = is_vbak-waerk.
   gs_output-cwaer    = is_vbak-waerk.
   gs_output-augru    = is_vbak-augru.
-  gs_output-adrnr    = is_vbak-adrnr.
   gs_output-vbtyp    = is_vbak-vbtyp.
+  gs_output-ktext    = is_vbak-ktext.
   gs_output-netwr_ak = is_vbak-netwr.
   gs_output-erdat    = is_vbak-erdat.
   gs_output-erzet    = is_vbak-erzet.
