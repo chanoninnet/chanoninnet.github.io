@@ -985,6 +985,11 @@ FORM user_command USING r_ucomm     TYPE sy-ucomm
       IF sy-subrc = 0 AND gs_output-vbeln IS NOT INITIAL.
         SET PARAMETER ID 'AUN' FIELD gs_output-vbeln.
         CALL TRANSACTION 'VA03' AND SKIP FIRST SCREEN.
+*       Redraw after returning from VA03 so the ALV toolbar/commands
+*       stay responsive (otherwise the grid keeps the called-tx state)
+        rs_selfield-refresh    = 'X'.
+        rs_selfield-col_stable = 'X'.
+        rs_selfield-row_stable = 'X'.
       ENDIF.
 
     WHEN 'REFRESH'.
