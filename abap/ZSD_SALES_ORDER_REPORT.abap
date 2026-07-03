@@ -57,7 +57,7 @@ TYPES: BEGIN OF ty_output,
          ernam     TYPE vbak-ernam,
          faksk     TYPE vbak-faksk,
          kunnr     TYPE vbak-kunnr,
-         kursk     TYPE vbak-kursk,
+         kursk     TYPE vbkd-kursk,
          kwmeng    TYPE vbap-kwmeng,
          lgort     TYPE vbap-lgort,
          lifsk     TYPE vbak-lifsk,
@@ -97,7 +97,7 @@ TYPES: BEGIN OF ty_output,
          prsdt     TYPE vbkd-prsdt,
          kursk_dat TYPE d,
          kurrf_dat TYPE d,
-         kurst     TYPE c LENGTH 4,
+         kurst     TYPE vbak-kurst,
          vlaufz    TYPE veda-vlaufz,
          vlauez    TYPE veda-vlauez,
          vlaufk    TYPE veda-vlaufk,
@@ -143,6 +143,7 @@ TYPES: BEGIN OF ty_vbkd,
          posnr TYPE vbkd-posnr,
          bstkd TYPE vbkd-bstkd,
          prsdt TYPE vbkd-prsdt,
+         kursk TYPE vbkd-kursk,
        END OF ty_vbkd.
 
 * Sold-to name buffer (KUNNR -> NAME1)
@@ -265,7 +266,7 @@ FORM get_data.
     WHERE vbeln = gt_vbak-vbeln.
 
 * --- Business Data (VBKD) ---
-  SELECT vbeln posnr bstkd prsdt
+  SELECT vbeln posnr bstkd prsdt kursk
     FROM vbkd
     INTO TABLE gt_vbkd
     FOR ALL ENTRIES IN gt_vbak
@@ -558,7 +559,7 @@ FORM fill_row USING is_vbak TYPE vbak
   gs_output-ernam    = is_vbak-ernam.
   gs_output-faksk    = is_vbak-faksk.
   gs_output-kunnr    = is_vbak-kunnr.
-  gs_output-kursk    = is_vbak-kursk.
+  gs_output-kurst    = is_vbak-kurst.
   gs_output-lifsk    = is_vbak-lifsk.
   gs_output-spart    = is_vbak-spart.
   gs_output-vkbur    = is_vbak-vkbur.
@@ -604,6 +605,7 @@ FORM fill_row USING is_vbak TYPE vbak
 * Business data (VBKD)
   gs_output-bstkd    = is_vbkd-bstkd.
   gs_output-prsdt    = is_vbkd-prsdt.
+  gs_output-kursk    = is_vbkd-kursk.
 
 * Status (VBUK) - code + description
   gs_output-status   = is_vbuk-gbstk.
