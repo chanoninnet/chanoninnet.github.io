@@ -923,8 +923,8 @@ ENDFORM.                    "build_fieldcat
 *&---------------------------------------------------------------------*
 *&      Form  HIDE_FIELD
 *&---------------------------------------------------------------------*
-*&      Mark a field-catalog column as not displayed (still selectable
-*&      via the ALV layout).
+*&      Remove a field-catalog column completely: TECH = 'X' means the
+*&      column is neither displayed nor available in the ALV layout.
 *&---------------------------------------------------------------------*
 FORM hide_field USING iv_field TYPE slis_fieldname.
 
@@ -933,7 +933,7 @@ FORM hide_field USING iv_field TYPE slis_fieldname.
   READ TABLE gt_fieldcat ASSIGNING <ls_fc>
        WITH KEY fieldname = iv_field.
   IF sy-subrc = 0.
-    <ls_fc>-no_out = 'X'.
+    <ls_fc>-tech = 'X'.
   ENDIF.
 
 ENDFORM.                    "hide_field
