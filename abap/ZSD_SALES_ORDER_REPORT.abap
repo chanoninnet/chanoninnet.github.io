@@ -630,24 +630,27 @@ FORM build_fieldcat.
   PERFORM get_id_desc USING 'Z037' CHANGING lv_d037.
   PERFORM get_id_desc USING 'Z086' CHANGING lv_d086.
 
+* --- 1) Document / item data first (document + item identifiers lead) --
   add_field 'VBELN'      'Sales Document'      10.
-  add_field 'AUART'      'Order Type'           4.
-  add_field 'ERDAT'      'Created On'          10.
-  add_field 'ERNAM'      'Created By'          12.
-  add_field 'VKORG'      'Sales Org.'           4.
-  add_field 'VTWEG'      'Distr. Channel'       2.
-  add_field 'SPART'      'Division'             2.
-  add_field 'KUNNR'      'Sold-to Party'       10.
-  add_field 'NAME1'      'Sold-to Name'        35.
-  add_field 'NETWR_HDR'  'Net Value (Hdr)'     15.
-  add_field 'WAERK'      'Currency'             5.
   add_field 'POSNR'      'Item'                 6.
   add_field 'MATNR'      'Material'            18.
   add_field 'ARKTX'      'Description'         40.
+  add_field 'AUART'      'Order Type'           4.
+  add_field 'ERDAT'      'Created On'          10.
+  add_field 'ERNAM'      'Created By'          12.
   add_field 'KWMENG'     'Order Qty'           15.
   add_field 'VRKME'      'Unit'                 3.
-  add_field 'NETWR_ITM'  'Net Value (Item)'    15.
   add_field 'WERKS'      'Plant'                4.
+  add_field 'NETWR_ITM'  'Net Value (Item)'    15.
+  add_field 'NETWR_HDR'  'Net Value (Hdr)'     15.
+  add_field 'WAERK'      'Currency'             5.
+  add_field 'KUNNR'      'Sold-to Party'       10.
+  add_field 'NAME1'      'Sold-to Name'        35.
+  add_field 'VKORG'      'Sales Org.'           4.
+  add_field 'VTWEG'      'Distr. Channel'       2.
+  add_field 'SPART'      'Division'             2.
+
+* --- 2) Status columns (code + description) ---------------------------
   add_field 'GBSTK'      'Ov. Status'           3.
   add_field 'GBSTK_TXT'  'Overall Status Desc' 20.
   add_field 'LFSTK'      'Dlv. Status'          3.
@@ -656,6 +659,8 @@ FORM build_fieldcat.
   add_field 'FKSTK_TXT'  'Billing Status Desc' 20.
   add_field 'ABSTK'      'Rej. Status'          3.
   add_field 'ABSTK_TXT'  'Rejection Status Desc' 20.
+
+* --- 3) Text columns last ---------------------------------------------
   add_field 'HEADER_TEXT' 'Header Text (0001)' 60.
   add_field 'TEXT_Z020'  lv_d020               60.
   add_field 'TEXT_Z037'  lv_d037               60.
