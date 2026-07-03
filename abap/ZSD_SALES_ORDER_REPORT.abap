@@ -74,8 +74,14 @@ TYPES: BEGIN OF ty_output,
          netwr_ak  TYPE vbak-netwr,
          netwr     TYPE vbap-netwr,
          spart     TYPE vbak-spart,
-         status    TYPE vbuk-gbstk,
-         statu     TYPE dd07v-ddtext,
+         gbstk     TYPE vbuk-gbstk,
+         gbstk_txt TYPE dd07v-ddtext,
+         lfstk     TYPE vbuk-lfstk,
+         lfstk_txt TYPE dd07v-ddtext,
+         fkstk     TYPE vbuk-fkstk,
+         fkstk_txt TYPE dd07v-ddtext,
+         abstk     TYPE vbuk-abstk,
+         abstk_txt TYPE dd07v-ddtext,
          vkbur     TYPE vbak-vkbur,
          vkgrp     TYPE vbak-vkgrp,
          vkorg     TYPE vbak-vkorg,
@@ -429,7 +435,6 @@ FORM build_output.
         ls_vbuk  TYPE vbuk,
         ls_veda  TYPE veda,
         ls_kna1  TYPE ty_kna1,
-        lv_status_txt TYPE dd07v-ddtext,
         lv_name1 TYPE kna1-name1,
         lv_htext TYPE string,
         lv_z020  TYPE string,
@@ -444,7 +449,6 @@ FORM build_output.
     CLEAR ls_vbuk.
     READ TABLE gt_vbuk INTO ls_vbuk
          WITH KEY vbeln = ls_vbak-vbeln BINARY SEARCH.
-    PERFORM status_text USING ls_vbuk-gbstk CHANGING lv_status_txt.
 
 *   Sold-to name (KNA1)
     CLEAR lv_name1.
@@ -498,7 +502,7 @@ FORM build_output.
         lv_found = 'X'.
         PERFORM fill_row USING ls_vbak ls_vbap ls_vbep ls_vbkd
                                ls_vbuk ls_veda
-                               lv_name1 lv_status_txt
+                               lv_name1
                                lv_htext lv_z020 lv_z037 lv_z086 lv_itext.
       ENDLOOP.
 
@@ -507,7 +511,7 @@ FORM build_output.
         CLEAR ls_vbep.
         PERFORM fill_row USING ls_vbak ls_vbap ls_vbep ls_vbkd
                                ls_vbuk ls_veda
-                               lv_name1 lv_status_txt
+                               lv_name1
                                lv_htext lv_z020 lv_z037 lv_z086 lv_itext.
       ENDIF.
 
@@ -518,7 +522,7 @@ FORM build_output.
       CLEAR: ls_vbap, ls_vbep, ls_vbkd.
       PERFORM fill_row USING ls_vbak ls_vbap ls_vbep ls_vbkd
                              ls_vbuk ls_veda
-                             lv_name1 lv_status_txt
+                             lv_name1
                              lv_htext lv_z020 lv_z037 lv_z086 lv_itext.
     ENDIF.
 
@@ -538,8 +542,7 @@ FORM fill_row USING is_vbak TYPE vbak
                     is_vbkd TYPE ty_vbkd
                     is_vbuk TYPE vbuk
                     is_veda TYPE veda
-                    iv_name1      TYPE kna1-name1
-                    iv_status_txt TYPE dd07v-ddtext
+                    iv_name1 TYPE kna1-name1
                     iv_htext TYPE string
                     iv_z020  TYPE string
                     iv_z037  TYPE string
@@ -607,9 +610,15 @@ FORM fill_row USING is_vbak TYPE vbak
   gs_output-prsdt    = is_vbkd-prsdt.
   gs_output-kursk    = is_vbkd-kursk.
 
-* Status (VBUK) - code + description
-  gs_output-status   = is_vbuk-gbstk.
-  gs_output-statu    = iv_status_txt.
+* Status (VBUK) - four overall statuses, each with description
+  gs_output-gbstk    = is_vbuk-gbstk.
+  gs_output-lfstk    = is_vbuk-lfstk.
+  gs_output-fkstk    = is_vbuk-fkstk.
+  gs_output-abstk    = is_vbuk-abstk.
+  PERFORM status_text USING is_vbuk-gbstk CHANGING gs_output-gbstk_txt.
+  PERFORM status_text USING is_vbuk-lfstk CHANGING gs_output-lfstk_txt.
+  PERFORM status_text USING is_vbuk-fkstk CHANGING gs_output-fkstk_txt.
+  PERFORM status_text USING is_vbuk-abstk CHANGING gs_output-abstk_txt.
 
 * Long texts
   gs_output-header_text = iv_htext.
@@ -802,8 +811,14 @@ FORM build_fieldcat.
   add_field 'NETWR_AK'  'Net Value (Hdr)'    15.
   add_field 'NETWR'     'Net Value (Item)'   15.
   add_field 'SPART'     'Division'            2.
-  add_field 'STATUS'    'Status'              3.
-  add_field 'STATU'     'Status Desc'        20.
+  add_field 'GBSTK'     'Ov. Status'          3.
+  add_field 'GBSTK_TXT' 'Overall Status Desc' 20.
+  add_field 'LFSTK'     'Dlv. Status'         3.
+  add_field 'LFSTK_TXT' 'Delivery Status Desc' 20.
+  add_field 'FKSTK'     'Bill. Status'        3.
+  add_field 'FKSTK_TXT' 'Billing Status Desc' 20.
+  add_field 'ABSTK'     'Rej. Status'         3.
+  add_field 'ABSTK_TXT' 'Rejection Status Desc' 20.
   add_field 'VKBUR'     'Sales Office'        4.
   add_field 'VKGRP'     'Sales Group'         3.
   add_field 'VKORG'     'Sales Org.'          4.
