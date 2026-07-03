@@ -33,7 +33,7 @@ TYPE-POOLS: slis.
 *&---------------------------------------------------------------------*
 *& Tables (work area needed for SELECT-OPTIONS references)
 *&---------------------------------------------------------------------*
-TABLES: vbak.
+TABLES: vbak, vbap.
 
 *&---------------------------------------------------------------------*
 *& Global types
@@ -209,7 +209,7 @@ RANGES: gr_tdid FOR stxh-tdid.
 *& Selection screen
 *&---------------------------------------------------------------------*
 SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-s01.
-SELECT-OPTIONS: s_waerk FOR vbak-waerk,   " Document Currency
+SELECT-OPTIONS: s_werks FOR vbap-werks,   " Plant
                 s_vbeln FOR vbak-vbeln,   " Sales Document
                 s_auart FOR vbak-auart,   " Order Type
                 s_vkorg FOR vbak-vkorg,   " Sales Organization
@@ -279,18 +279,18 @@ FORM get_data.
       AND vkbur IN s_vkbur
       AND vkgrp IN s_vkgrp
       AND kunnr IN s_kunnr
-      AND waerk IN s_waerk
       AND erdat IN s_erdat.
 
   IF gt_vbak IS INITIAL.
     RETURN.
   ENDIF.
 
-* --- Sales Order Item (VBAP) ---
+* --- Sales Order Item (VBAP) - restricted by plant if given ---
   SELECT * FROM vbap
     INTO TABLE gt_vbap
     FOR ALL ENTRIES IN gt_vbak
-    WHERE vbeln = gt_vbak-vbeln.
+    WHERE vbeln = gt_vbak-vbeln
+      AND werks IN s_werks.
 
 * --- Schedule Lines (VBEP) ---
   SELECT vbeln posnr etenr edatu bmeng wmeng wadat
@@ -545,8 +545,9 @@ FORM build_output.
 
     ENDLOOP.
 
-*   Header without items - still one row
-    IF sy-subrc <> 0.
+*   Header without items - still one row (skip when filtering by plant,
+*   since such a header has no item in the selected plant)
+    IF sy-subrc <> 0 AND s_werks IS INITIAL.
       CLEAR: ls_vbap, ls_vbep, ls_vbkd.
       PERFORM fill_row USING ls_vbak ls_vbap ls_vbep ls_vbkd
                              ls_vbuk ls_veda
