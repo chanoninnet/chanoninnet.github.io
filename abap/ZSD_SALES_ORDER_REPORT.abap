@@ -197,7 +197,8 @@ DATA: gt_vbak   TYPE STANDARD TABLE OF vbak,
       gs_output TYPE ty_output.
 
 DATA: gt_fieldcat TYPE slis_t_fieldcat_alv,
-      gs_layout   TYPE slis_layout_alv.
+      gs_layout   TYPE slis_layout_alv,
+      gs_variant  TYPE disvariant.   " ALV display variant
 
 * Header text IDs to read: standard note 0001 plus custom Z-texts.
 * RANGES (classic) is used instead of TYPE RANGE OF for old-release
@@ -219,6 +220,23 @@ SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE text-s02.
 PARAMETERS: p_text  AS CHECKBOX DEFAULT 'X',   " Read Header Long Text
             p_itext AS CHECKBOX DEFAULT 'X'.   " Read Item Long Text
 SELECTION-SCREEN END OF BLOCK b2.
+
+SELECTION-SCREEN BEGIN OF BLOCK b3 WITH FRAME TITLE text-s03.
+PARAMETERS: p_vari TYPE disvariant-variant.    " ALV Layout Variant
+SELECTION-SCREEN END OF BLOCK b3.
+
+*&---------------------------------------------------------------------*
+*& Selection-screen events
+*&---------------------------------------------------------------------*
+* F4 help for the ALV layout variant
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_vari.
+  PERFORM f4_variant CHANGING p_vari.
+
+* Validate the entered variant
+AT SELECTION-SCREEN ON p_vari.
+  IF p_vari IS NOT INITIAL.
+    PERFORM check_variant USING p_vari.
+  ENDIF.
 
 *&---------------------------------------------------------------------*
 *& Main
@@ -881,6 +899,11 @@ FORM display_alv.
   gs_layout-colwidth_optimize = abap_true.
   gs_layout-zebra             = abap_true.
 
+* Layout variant (report + variant chosen on the selection screen)
+  CLEAR gs_variant.
+  gs_variant-report  = sy-repid.
+  gs_variant-variant = p_vari.
+
   CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
     EXPORTING
       i_callback_program       = sy-repid
@@ -888,6 +911,7 @@ FORM display_alv.
       is_layout                = gs_layout
       it_fieldcat              = gt_fieldcat
       i_save                   = 'A'
+      is_variant               = gs_variant
     TABLES
       t_outtab                 = gt_output
     EXCEPTIONS
@@ -920,3 +944,65 @@ FORM user_command USING r_ucomm     TYPE sy-ucomm
   ENDCASE.
 
 ENDFORM.                    "user_command
+
+*&---------------------------------------------------------------------*
+*&      Form  F4_VARIANT
+*&---------------------------------------------------------------------*
+*&      F4 value help for the ALV layout variant.
+*&---------------------------------------------------------------------*
+FORM f4_variant CHANGING cv_variant TYPE disvariant-variant.
+
+  DATA: ls_variant TYPE disvariant,
+        lv_exit    TYPE char1.
+
+  ls_variant-report = sy-repid.
+
+  CALL FUNCTION 'REUSE_ALV_VARIANT_F4'
+    EXPORTING
+      is_variant = ls_variant
+      i_save     = 'A'
+    IMPORTING
+      e_exit     = lv_exit
+      es_variant = ls_variant
+    EXCEPTIONS
+      not_found  = 1
+      program_error = 2
+      OTHERS     = 3.
+
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE 'S' NUMBER sy-msgno
+            WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 DISPLAY LIKE 'W'.
+  ELSEIF lv_exit = space.
+    cv_variant = ls_variant-variant.
+  ENDIF.
+
+ENDFORM.                    "f4_variant
+
+*&---------------------------------------------------------------------*
+*&      Form  CHECK_VARIANT
+*&---------------------------------------------------------------------*
+*&      Validate that the entered ALV layout variant exists.
+*&---------------------------------------------------------------------*
+FORM check_variant USING iv_variant TYPE disvariant-variant.
+
+  DATA: ls_variant TYPE disvariant.
+
+  ls_variant-report  = sy-repid.
+  ls_variant-variant = iv_variant.
+
+  CALL FUNCTION 'REUSE_ALV_VARIANT_EXISTENCE'
+    EXPORTING
+      i_save     = 'A'
+    CHANGING
+      cs_variant = ls_variant
+    EXCEPTIONS
+      wrong_input       = 1
+      not_found         = 2
+      program_error     = 3
+      OTHERS            = 4.
+
+  IF sy-subrc <> 0.
+    MESSAGE 'Layout variant does not exist' TYPE 'E'.
+  ENDIF.
+
+ENDFORM.                    "check_variant
