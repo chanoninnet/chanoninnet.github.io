@@ -20,12 +20,19 @@ them in an interactive ALV grid with **drill-down into VA03**.
 Long texts are SAPscript texts, so `STXH` only serves as the fast existence
 index; the actual text lines are read through **`READ_TEXT`**:
 
-| Text     | Object | ID     | Name             |
-|----------|--------|--------|------------------|
-| Header   | `VBBK` | `0001` | `VBELN`          |
-| Item     | `VBBP` | `0001` | `VBELN` + `POSNR`|
+| Text                | Object | ID     | Name             |
+|---------------------|--------|--------|------------------|
+| Header note         | `VBBK` | `0001` | `VBELN`          |
+| Header text Z020    | `VBBK` | `Z020` | `VBELN`          |
+| Header text Z037    | `VBBK` | `Z037` | `VBELN`          |
+| Header text Z086    | `VBBK` | `Z086` | `VBELN`          |
+| Item                | `VBBP` | `0001` | `VBELN` + `POSNR`|
 
-Language = logon language (`SY-LANGU`).
+Language = logon language (`SY-LANGU`). Each header text ID has its own output
+column; the column heading is the text-ID description read from **`TTXIT`**
+(object `VBBK`, logon language), with a generic fallback if none is maintained.
+The set of header text IDs is held in a `RANGES` table (`gr_tdid`), so the
+`STXH` index and `TTXIT` descriptions are fetched in one read each.
 
 ## Status descriptions
 

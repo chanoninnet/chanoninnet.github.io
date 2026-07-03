@@ -65,7 +65,10 @@ TYPES: BEGIN OF ty_output,
          fkstk_txt  TYPE dd07v-ddtext, " ...description
          abstk      TYPE vbuk-abstk,   " Overall Rejection Status
          abstk_txt  TYPE dd07v-ddtext, " ...description
-         header_text TYPE string,      " Header long text (concatenated)
+         header_text TYPE string,      " Header long text - id 0001
+         text_z020   TYPE string,      " Header text - id Z020
+         text_z037   TYPE string,      " Header text - id Z037
+         text_z086   TYPE string,      " Header text - id Z086
          item_text   TYPE string,      " Item long text (concatenated)
        END OF ty_output.
 
@@ -89,6 +92,12 @@ TYPES: BEGIN OF ty_statv,
          ddtext   TYPE dd07v-ddtext,
        END OF ty_statv.
 
+* Text-ID description buffer (TDID -> description, from TTXIT)
+TYPES: BEGIN OF ty_ttxit,
+         tdid   TYPE ttxit-tdid,
+         tdtext TYPE ttxit-tdtext,
+       END OF ty_ttxit.
+
 *&---------------------------------------------------------------------*
 *& Global data
 *&---------------------------------------------------------------------*
@@ -100,6 +109,8 @@ DATA: gt_vbak   TYPE STANDARD TABLE OF vbak,
       gt_kna1   TYPE STANDARD TABLE OF ty_kna1,
       gt_statv  TYPE STANDARD TABLE OF ty_statv,
       gs_statv  TYPE ty_statv,
+      gt_ttxit  TYPE STANDARD TABLE OF ty_ttxit,
+      gs_ttxit  TYPE ty_ttxit,
       gt_names  TYPE STANDARD TABLE OF ty_name,
       gs_name   TYPE ty_name,
       gt_output TYPE STANDARD TABLE OF ty_output,
@@ -107,6 +118,11 @@ DATA: gt_vbak   TYPE STANDARD TABLE OF vbak,
 
 DATA: gt_fieldcat TYPE slis_t_fieldcat_alv,
       gs_layout   TYPE slis_layout_alv.
+
+* Header text IDs to read: standard note 0001 plus custom Z-texts.
+* RANGES (classic) is used instead of TYPE RANGE OF for old-release
+* compatibility.
+RANGES: gr_tdid FOR stxh-tdid.
 
 *&---------------------------------------------------------------------*
 *& Selection screen
@@ -183,7 +199,16 @@ FORM get_data.
     WHERE kunnr = gt_vbak-kunnr.
   SORT gt_kna1 BY kunnr.
 
-* --- Header Text index (STXH) : object VBBK / id 0001 ---
+* --- Build the header text-ID range (0001 + Z020 / Z037 / Z086) ---
+  REFRESH gr_tdid.
+  gr_tdid-sign = 'I'.
+  gr_tdid-option = 'EQ'.
+  gr_tdid-low = '0001'. APPEND gr_tdid.
+  gr_tdid-low = 'Z020'. APPEND gr_tdid.
+  gr_tdid-low = 'Z037'. APPEND gr_tdid.
+  gr_tdid-low = 'Z086'. APPEND gr_tdid.
+
+* --- Header Text index (STXH) : object VBBK / ids in gr_tdid ---
   IF p_text = abap_true.
     CLEAR gt_names.
     LOOP AT gt_vbak INTO ls_vbak.
@@ -198,8 +223,16 @@ FORM get_data.
         FOR ALL ENTRIES IN gt_names
         WHERE tdobject = 'VBBK'
           AND tdname   = gt_names-tdname
-          AND tdid     = '0001'.
+          AND tdid     IN gr_tdid.
     ENDIF.
+
+*   Text-ID descriptions (TTXIT) for the column headings
+    SELECT tdid tdtext FROM ttxit
+      INTO TABLE gt_ttxit
+      WHERE tdobject = 'VBBK'
+        AND tdspras  = sy-langu
+        AND tdid     IN gr_tdid.
+    SORT gt_ttxit BY tdid.
   ENDIF.
 
 * --- Item Text index (STXH) : object VBBP / id 0001 ---
@@ -228,7 +261,7 @@ FORM get_data.
 * Sort internal tables for fast READ TABLE ... BINARY SEARCH
   SORT gt_vbap BY vbeln posnr.
   SORT gt_vbuk BY vbeln.
-  SORT gt_stxh BY tdname.
+  SORT gt_stxh BY tdname tdid.
   SORT gt_stxi BY tdname.
 
 ENDFORM.                    "get_data
@@ -303,6 +336,9 @@ FORM build_output.
         ls_vbuk TYPE vbuk,
         ls_kna1 TYPE ty_kna1,
         lv_htext TYPE string,
+        lv_z020  TYPE string,
+        lv_z037  TYPE string,
+        lv_z086  TYPE string,
         lv_itext TYPE string,
         lv_name1     TYPE kna1-name1,
         lv_gbstk_txt TYPE dd07v-ddtext,
@@ -331,11 +367,17 @@ FORM build_output.
       lv_name1 = ls_kna1-name1.
     ENDIF.
 
-*   Header long text (read once per header)
-    CLEAR lv_htext.
+*   Header long texts (read once per header, one per text ID)
+    CLEAR: lv_htext, lv_z020, lv_z037, lv_z086.
     IF p_text = abap_true.
-      PERFORM read_header_text USING ls_vbak-vbeln
-                            CHANGING lv_htext.
+      PERFORM read_header_text_id USING ls_vbak-vbeln '0001'
+                               CHANGING lv_htext.
+      PERFORM read_header_text_id USING ls_vbak-vbeln 'Z020'
+                               CHANGING lv_z020.
+      PERFORM read_header_text_id USING ls_vbak-vbeln 'Z037'
+                               CHANGING lv_z037.
+      PERFORM read_header_text_id USING ls_vbak-vbeln 'Z086'
+                               CHANGING lv_z086.
     ENDIF.
 
 *   Expand items - one output row per item
@@ -375,8 +417,11 @@ FORM build_output.
       gs_output-abstk     = ls_vbuk-abstk.
       gs_output-abstk_txt = lv_abstk_txt.
 
-*     Header long text
+*     Header long texts (by text ID)
       gs_output-header_text = lv_htext.
+      gs_output-text_z020   = lv_z020.
+      gs_output-text_z037   = lv_z037.
+      gs_output-text_z086   = lv_z086.
 
 *     Item long text (read per item)
       CLEAR lv_itext.
@@ -412,6 +457,9 @@ FORM build_output.
       gs_output-abstk       = ls_vbuk-abstk.
       gs_output-abstk_txt   = lv_abstk_txt.
       gs_output-header_text = lv_htext.
+      gs_output-text_z020   = lv_z020.
+      gs_output-text_z037   = lv_z037.
+      gs_output-text_z086   = lv_z086.
       APPEND gs_output TO gt_output.
     ENDIF.
 
@@ -420,21 +468,26 @@ FORM build_output.
 ENDFORM.                    "build_output
 
 *&---------------------------------------------------------------------*
-*&      Form  READ_HEADER_TEXT
+*&      Form  READ_HEADER_TEXT_ID
 *&---------------------------------------------------------------------*
-*&      Read the sales order header long text via READ_TEXT.
-*&      Only headers that have an STXH entry are read (performance).
+*&      Read a sales order header text of a given text ID via READ_TEXT
+*&      (object VBBK / name = VBELN). Only texts that have an STXH index
+*&      entry for that ID are read (performance).
 *&---------------------------------------------------------------------*
-FORM read_header_text USING    iv_vbeln TYPE vbak-vbeln
-                      CHANGING cv_text  TYPE string.
+FORM read_header_text_id USING    iv_vbeln TYPE vbak-vbeln
+                                  iv_tdid  TYPE stxh-tdid
+                         CHANGING cv_text  TYPE string.
 
   DATA: lt_lines TYPE STANDARD TABLE OF tline,
         ls_line  TYPE tline,
         lv_name  TYPE thead-tdname.
 
-* Only read text if index entry exists in STXH
+  CLEAR cv_text.
+
+* Only read text if index entry exists in STXH for this VBELN + ID
   READ TABLE gt_stxh TRANSPORTING NO FIELDS
-       WITH KEY tdname = iv_vbeln BINARY SEARCH.
+       WITH KEY tdname = iv_vbeln
+                tdid   = iv_tdid BINARY SEARCH.
   IF sy-subrc <> 0.
     RETURN.
   ENDIF.
@@ -443,7 +496,7 @@ FORM read_header_text USING    iv_vbeln TYPE vbak-vbeln
 
   CALL FUNCTION 'READ_TEXT'
     EXPORTING
-      id                      = '0001'
+      id                      = iv_tdid
       language                = sy-langu
       name                    = lv_name
       object                  = 'VBBK'
@@ -472,7 +525,26 @@ FORM read_header_text USING    iv_vbeln TYPE vbak-vbeln
     ENDIF.
   ENDLOOP.
 
-ENDFORM.                    "read_header_text
+ENDFORM.                    "read_header_text_id
+
+*&---------------------------------------------------------------------*
+*&      Form  GET_ID_DESC
+*&---------------------------------------------------------------------*
+*&      Return the description of a header text ID (from TTXIT), with a
+*&      generic fallback when no description is maintained.
+*&---------------------------------------------------------------------*
+FORM get_id_desc USING    iv_tdid TYPE stxh-tdid
+                 CHANGING cv_desc TYPE ttxit-tdtext.
+
+  READ TABLE gt_ttxit INTO gs_ttxit
+       WITH KEY tdid = iv_tdid BINARY SEARCH.
+  IF sy-subrc = 0 AND gs_ttxit-tdtext IS NOT INITIAL.
+    cv_desc = gs_ttxit-tdtext.
+  ELSE.
+    CONCATENATE 'Header Text' iv_tdid INTO cv_desc SEPARATED BY space.
+  ENDIF.
+
+ENDFORM.                    "get_id_desc
 
 *&---------------------------------------------------------------------*
 *&      Form  READ_ITEM_TEXT
@@ -548,7 +620,15 @@ FORM build_fieldcat.
     APPEND gs_fieldcat TO gt_fieldcat.
   END-OF-DEFINITION.
 
-  DATA: gs_fieldcat TYPE slis_fieldcat_alv.
+  DATA: gs_fieldcat TYPE slis_fieldcat_alv,
+        lv_d020     TYPE ttxit-tdtext,
+        lv_d037     TYPE ttxit-tdtext,
+        lv_d086     TYPE ttxit-tdtext.
+
+* Resolve the custom header text-ID descriptions for the headings
+  PERFORM get_id_desc USING 'Z020' CHANGING lv_d020.
+  PERFORM get_id_desc USING 'Z037' CHANGING lv_d037.
+  PERFORM get_id_desc USING 'Z086' CHANGING lv_d086.
 
   add_field 'VBELN'      'Sales Document'      10.
   add_field 'AUART'      'Order Type'           4.
@@ -576,7 +656,10 @@ FORM build_fieldcat.
   add_field 'FKSTK_TXT'  'Billing Status Desc' 20.
   add_field 'ABSTK'      'Rej. Status'          3.
   add_field 'ABSTK_TXT'  'Rejection Status Desc' 20.
-  add_field 'HEADER_TEXT' 'Header Text'        60.
+  add_field 'HEADER_TEXT' 'Header Text (0001)' 60.
+  add_field 'TEXT_Z020'  lv_d020               60.
+  add_field 'TEXT_Z037'  lv_d037               60.
+  add_field 'TEXT_Z086'  lv_d086               60.
   add_field 'ITEM_TEXT'  'Item Text'           60.
 
 ENDFORM.                    "build_fieldcat
