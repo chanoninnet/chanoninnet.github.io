@@ -907,7 +907,36 @@ FORM build_fieldcat.
   add_field 'TEXT_Z086'   lv_d086              60.
   add_field 'ITEM_TEXT'   'Item Text'          60.
 
+* Hide the text columns when the corresponding checkbox is off
+  IF p_text <> abap_true.
+    PERFORM hide_field USING 'HEADER_TEXT'.
+    PERFORM hide_field USING 'TEXT_Z020'.
+    PERFORM hide_field USING 'TEXT_Z037'.
+    PERFORM hide_field USING 'TEXT_Z086'.
+  ENDIF.
+  IF p_itext <> abap_true.
+    PERFORM hide_field USING 'ITEM_TEXT'.
+  ENDIF.
+
 ENDFORM.                    "build_fieldcat
+
+*&---------------------------------------------------------------------*
+*&      Form  HIDE_FIELD
+*&---------------------------------------------------------------------*
+*&      Mark a field-catalog column as not displayed (still selectable
+*&      via the ALV layout).
+*&---------------------------------------------------------------------*
+FORM hide_field USING iv_field TYPE slis_fieldname.
+
+  FIELD-SYMBOLS <ls_fc> TYPE slis_fieldcat_alv.
+
+  READ TABLE gt_fieldcat ASSIGNING <ls_fc>
+       WITH KEY fieldname = iv_field.
+  IF sy-subrc = 0.
+    <ls_fc>-no_out = 'X'.
+  ENDIF.
+
+ENDFORM.                    "hide_field
 
 *&---------------------------------------------------------------------*
 *&      Form  DISPLAY_ALV
