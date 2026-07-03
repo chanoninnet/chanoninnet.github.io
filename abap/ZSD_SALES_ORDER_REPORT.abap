@@ -22,15 +22,6 @@
 *&
 *& Status description : fixed values of domain STATV.
 *& Double-click on a row opens the sales order in VA03.
-*&
-*& ALV toolbar 'Refresh' button:
-*&   The grid uses GUI status ZSTANDARD (callback PF_STATUS_SET). Create
-*&   it once in this program: from the ALV list, System status shows the
-*&   active status is STANDARD of function group SAPLKKBL. In SE80/SE41
-*&   copy status STANDARD of SAPLKKBL into this program as ZSTANDARD and
-*&   add a push button with function code REFRESH (e.g. in the toolbar,
-*&   icon ICON_REFRESH, text 'Refresh'). USER_COMMAND handles REFRESH by
-*&   re-reading the data and refreshing the grid without leaving it.
 *&---------------------------------------------------------------------*
 REPORT zsd_sales_order_report LINE-SIZE 1023.
 
@@ -231,9 +222,10 @@ SELECT-OPTIONS: s_werks FOR vbap-werks,   " Plant
 SELECTION-SCREEN END OF BLOCK b1.
 
 SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE text-s02.
-PARAMETERS: p_text  AS CHECKBOX DEFAULT 'X',   " Read Header Long Text
-            p_itext AS CHECKBOX DEFAULT 'X',   " Read Item Long Text
-            p_lfstc AS CHECKBOX.               " Only fully delivered (LFSTK=C)
+PARAMETERS: p_lfstc AS CHECKBOX,               " Only fully delivered (LFSTK=C)
+            p_text  AS CHECKBOX DEFAULT 'X',   " Read Header Long Text
+            p_itext AS CHECKBOX DEFAULT 'X'.   " Read Item Long Text
+
 SELECTION-SCREEN END OF BLOCK b2.
 
 SELECTION-SCREEN BEGIN OF BLOCK b3 WITH FRAME TITLE text-s03.
@@ -413,8 +405,6 @@ FORM load_status_texts.
   DATA: lt_dd07v TYPE STANDARD TABLE OF dd07v,
         ls_dd07v TYPE dd07v.
 
-  REFRESH gt_statv.
-
   CALL FUNCTION 'DD_DOMVALUES_GET'
     EXPORTING
       domname        = 'STATV'
@@ -483,8 +473,6 @@ FORM build_output.
         lv_itext TYPE string,
         lv_found TYPE flag.
 
-  REFRESH gt_output.
-
   LOOP AT gt_vbak INTO ls_vbak.
 
 *   Header status (VBUK)
@@ -493,7 +481,7 @@ FORM build_output.
          WITH KEY vbeln = ls_vbak-vbeln BINARY SEARCH.
 
 *   Keep only fully-delivered orders (LFSTK = C) when requested
-    IF p_lfstc = abap_true AND ls_vbuk-lfstk <> 'C'.
+    IF p_lfstc = abap_true AND ls_vbuk-lfstk = 'C'.
       CONTINUE.
     ENDIF.
 
@@ -937,7 +925,6 @@ FORM display_alv.
   CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
     EXPORTING
       i_callback_program       = sy-repid
-      i_callback_pf_status_set = 'PF_STATUS_SET'
       i_callback_user_command  = 'USER_COMMAND'
       is_layout                = gs_layout
       it_fieldcat              = gt_fieldcat
@@ -957,23 +944,9 @@ FORM display_alv.
 ENDFORM.                    "display_alv
 
 *&---------------------------------------------------------------------*
-*&      Form  PF_STATUS_SET
-*&---------------------------------------------------------------------*
-*&      Set the ALV GUI status. ZSTANDARD is a copy of status STANDARD
-*&      from function group SAPLKKBL with an extra push button whose
-*&      function code is REFRESH (see notes in the report header).
-*&---------------------------------------------------------------------*
-FORM pf_status_set USING rt_extab TYPE slis_t_extab.
-
-  SET PF-STATUS 'ZSTANDARD' EXCLUDING rt_extab.
-
-ENDFORM.                    "pf_status_set
-
-*&---------------------------------------------------------------------*
 *&      Form  USER_COMMAND
 *&---------------------------------------------------------------------*
-*&      &IC1     - double-click opens the sales order in VA03.
-*&      REFRESH  - re-read the data and refresh the grid in place.
+*&      Double-click (&IC1) opens the sales order in VA03.
 *&---------------------------------------------------------------------*
 FORM user_command USING r_ucomm     TYPE sy-ucomm
                         rs_selfield TYPE slis_selfield.
@@ -985,20 +958,7 @@ FORM user_command USING r_ucomm     TYPE sy-ucomm
       IF sy-subrc = 0 AND gs_output-vbeln IS NOT INITIAL.
         SET PARAMETER ID 'AUN' FIELD gs_output-vbeln.
         CALL TRANSACTION 'VA03' AND SKIP FIRST SCREEN.
-*       Redraw after returning from VA03 so the ALV toolbar/commands
-*       stay responsive (otherwise the grid keeps the called-tx state)
-        rs_selfield-refresh    = 'X'.
-        rs_selfield-col_stable = 'X'.
-        rs_selfield-row_stable = 'X'.
       ENDIF.
-
-    WHEN 'REFRESH'.
-*     Re-read everything with the current selection and redisplay
-      PERFORM get_data.
-      PERFORM build_output.
-      rs_selfield-refresh    = 'X'.   " redraw the grid
-      rs_selfield-col_stable = 'X'.   " keep column position
-      rs_selfield-row_stable = 'X'.   " keep scroll position
   ENDCASE.
 
 ENDFORM.                    "user_command
