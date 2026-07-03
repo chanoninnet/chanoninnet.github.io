@@ -23,6 +23,11 @@ REPORT zsd_sales_order_report LINE-SIZE 255.
 TYPE-POOLS: slis.
 
 *&---------------------------------------------------------------------*
+*& Tables (work area needed for SELECT-OPTIONS references)
+*&---------------------------------------------------------------------*
+TABLES: vbak.
+
+*&---------------------------------------------------------------------*
 *& Global types
 *&---------------------------------------------------------------------*
 TYPES: BEGIN OF ty_output,
@@ -67,11 +72,11 @@ DATA: gt_fieldcat TYPE slis_t_fieldcat_alv,
 *& Selection screen
 *&---------------------------------------------------------------------*
 SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-s01.
-SELECT-OPTIONS: s_vbeln FOR gt_output-vbeln,   " Sales Document
-                s_auart FOR gt_output-auart,   " Order Type
-                s_vkorg FOR gt_output-vkorg,   " Sales Organization
-                s_kunnr FOR gt_output-kunnr,   " Sold-to Party
-                s_erdat FOR gt_output-erdat.   " Created On
+SELECT-OPTIONS: s_vbeln FOR vbak-vbeln,   " Sales Document
+                s_auart FOR vbak-auart,   " Order Type
+                s_vkorg FOR vbak-vkorg,   " Sales Organization
+                s_kunnr FOR vbak-kunnr,   " Sold-to Party
+                s_erdat FOR vbak-erdat.   " Created On
 SELECTION-SCREEN END OF BLOCK b1.
 
 SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE text-s02.
