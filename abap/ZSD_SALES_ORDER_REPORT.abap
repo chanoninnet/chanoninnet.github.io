@@ -811,14 +811,6 @@ FORM build_fieldcat.
   add_field 'NETWR_AK'  'Net Value (Hdr)'    15.
   add_field 'NETWR'     'Net Value (Item)'   15.
   add_field 'SPART'     'Division'            2.
-  add_field 'GBSTK'     'Ov. Status'          3.
-  add_field 'GBSTK_TXT' 'Overall Status Desc' 20.
-  add_field 'LFSTK'     'Dlv. Status'         3.
-  add_field 'LFSTK_TXT' 'Delivery Status Desc' 20.
-  add_field 'FKSTK'     'Bill. Status'        3.
-  add_field 'FKSTK_TXT' 'Billing Status Desc' 20.
-  add_field 'ABSTK'     'Rej. Status'         3.
-  add_field 'ABSTK_TXT' 'Rejection Status Desc' 20.
   add_field 'VKBUR'     'Sales Office'        4.
   add_field 'VKGRP'     'Sales Group'         3.
   add_field 'VKORG'     'Sales Org.'          4.
@@ -861,6 +853,16 @@ FORM build_fieldcat.
   add_field 'BEZEI'     'Description'        40.
   add_field 'ERDAT'     'Created On'         10.
   add_field 'ERZET'     'Created At'          8.
+
+* --- Header status columns (moved to the right) ---
+  add_field 'GBSTK'     'Ov. Status'          3.
+  add_field 'GBSTK_TXT' 'Overall Status Desc' 20.
+  add_field 'LFSTK'     'Dlv. Status'         3.
+  add_field 'LFSTK_TXT' 'Delivery Status Desc' 20.
+  add_field 'FKSTK'     'Bill. Status'        3.
+  add_field 'FKSTK_TXT' 'Billing Status Desc' 20.
+  add_field 'ABSTK'     'Rej. Status'         3.
+  add_field 'ABSTK_TXT' 'Rejection Status Desc' 20.
 
 * --- Long-text columns last ---
   add_field 'HEADER_TEXT' 'Header Text (0001)' 60.
