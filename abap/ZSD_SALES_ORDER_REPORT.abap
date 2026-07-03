@@ -223,7 +223,8 @@ SELECTION-SCREEN END OF BLOCK b1.
 
 SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE text-s02.
 PARAMETERS: p_text  AS CHECKBOX DEFAULT 'X',   " Read Header Long Text
-            p_itext AS CHECKBOX DEFAULT 'X'.   " Read Item Long Text
+            p_itext AS CHECKBOX DEFAULT 'X',   " Read Item Long Text
+            p_lfstc AS CHECKBOX.               " Only fully delivered (LFSTK=C)
 SELECTION-SCREEN END OF BLOCK b2.
 
 SELECTION-SCREEN BEGIN OF BLOCK b3 WITH FRAME TITLE text-s03.
@@ -477,6 +478,11 @@ FORM build_output.
     CLEAR ls_vbuk.
     READ TABLE gt_vbuk INTO ls_vbuk
          WITH KEY vbeln = ls_vbak-vbeln BINARY SEARCH.
+
+*   Keep only fully-delivered orders (LFSTK = C) when requested
+    IF p_lfstc = abap_true AND ls_vbuk-lfstk <> 'C'.
+      CONTINUE.
+    ENDIF.
 
 *   Sold-to name (KNA1)
     CLEAR lv_name1.
