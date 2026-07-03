@@ -209,9 +209,14 @@ RANGES: gr_tdid FOR stxh-tdid.
 *& Selection screen
 *&---------------------------------------------------------------------*
 SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-s01.
-SELECT-OPTIONS: s_vbeln FOR vbak-vbeln,   " Sales Document
+SELECT-OPTIONS: s_waerk FOR vbak-waerk,   " Document Currency
+                s_vbeln FOR vbak-vbeln,   " Sales Document
                 s_auart FOR vbak-auart,   " Order Type
                 s_vkorg FOR vbak-vkorg,   " Sales Organization
+                s_vtweg FOR vbak-vtweg,   " Distribution Channel
+                s_spart FOR vbak-spart,   " Division
+                s_vkbur FOR vbak-vkbur,   " Sales Office
+                s_vkgrp FOR vbak-vkgrp,   " Sales Group
                 s_kunnr FOR vbak-kunnr,   " Sold-to Party
                 s_erdat FOR vbak-erdat.   " Created On
 SELECTION-SCREEN END OF BLOCK b1.
@@ -269,7 +274,12 @@ FORM get_data.
     WHERE vbeln IN s_vbeln
       AND auart IN s_auart
       AND vkorg IN s_vkorg
+      AND vtweg IN s_vtweg
+      AND spart IN s_spart
+      AND vkbur IN s_vkbur
+      AND vkgrp IN s_vkgrp
       AND kunnr IN s_kunnr
+      AND waerk IN s_waerk
       AND erdat IN s_erdat.
 
   IF gt_vbak IS INITIAL.
