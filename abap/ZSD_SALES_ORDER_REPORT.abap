@@ -222,7 +222,7 @@ SELECT-OPTIONS: s_werks FOR vbap-werks,   " Plant
 SELECTION-SCREEN END OF BLOCK b1.
 
 SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE text-s02.
-PARAMETERS: p_lfstc AS CHECKBOX,               " Only fully delivered (LFSTK=C)
+PARAMETERS: p_lfstc AS CHECKBOX,               " Only not completed delivery (LFSTK <> C)
             p_text  AS CHECKBOX DEFAULT 'X',   " Read Header Long Text
             p_itext AS CHECKBOX DEFAULT 'X'.   " Read Item Long Text
 
@@ -480,7 +480,7 @@ FORM build_output.
     READ TABLE gt_vbuk INTO ls_vbuk
          WITH KEY vbeln = ls_vbak-vbeln BINARY SEARCH.
 
-*   Keep only fully-delivered orders (LFSTK = C) when requested
+*   Show only not-completed deliveries: skip fully-delivered (LFSTK = C)
     IF p_lfstc = abap_true AND ls_vbuk-lfstk = 'C'.
       CONTINUE.
     ENDIF.
