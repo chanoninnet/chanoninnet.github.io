@@ -55,6 +55,14 @@ TYPES: BEGIN OF ty_output,
          header_text TYPE string,      " Header long text (concatenated)
        END OF ty_output.
 
+* Driver table for the STXH FOR ALL ENTRIES read. TDNAME is CHAR 70,
+* while VBAK-VBELN is CHAR 10 - old releases require identical type and
+* length in the FOR ALL ENTRIES comparison, so the key is typed here as
+* STXH-TDNAME.
+TYPES: BEGIN OF ty_name,
+         tdname TYPE stxh-tdname,
+       END OF ty_name.
+
 *&---------------------------------------------------------------------*
 *& Global data
 *&---------------------------------------------------------------------*
@@ -62,6 +70,8 @@ DATA: gt_vbak   TYPE STANDARD TABLE OF vbak,
       gt_vbap   TYPE STANDARD TABLE OF vbap,
       gt_vbuk   TYPE STANDARD TABLE OF vbuk,
       gt_stxh   TYPE STANDARD TABLE OF stxh,
+      gt_names  TYPE STANDARD TABLE OF ty_name,
+      gs_name   TYPE ty_name,
       gt_output TYPE STANDARD TABLE OF ty_output,
       gs_output TYPE ty_output.
 
@@ -133,12 +143,23 @@ FORM get_data.
 
 * --- Header Text index (STXH) : object VBBK / id 0001 ---
   IF p_text = abap_true.
-    SELECT * FROM stxh
-      INTO TABLE gt_stxh
-      FOR ALL ENTRIES IN gt_vbak
-      WHERE tdobject = 'VBBK'
-        AND tdname   = gt_vbak-vbeln
-        AND tdid     = '0001'.
+
+*   Build driver table with TDNAME-typed key (CHAR 70) from VBELN
+    DATA: ls_vbak_n TYPE vbak.
+    LOOP AT gt_vbak INTO ls_vbak_n.
+      CLEAR gs_name.
+      gs_name-tdname = ls_vbak_n-vbeln.   " widening CHAR10 -> CHAR70
+      APPEND gs_name TO gt_names.
+    ENDLOOP.
+
+    IF gt_names IS NOT INITIAL.
+      SELECT * FROM stxh
+        INTO TABLE gt_stxh
+        FOR ALL ENTRIES IN gt_names
+        WHERE tdobject = 'VBBK'
+          AND tdname   = gt_names-tdname
+          AND tdid     = '0001'.
+    ENDIF.
   ENDIF.
 
 * Sort internal tables for fast READ TABLE ... BINARY SEARCH
