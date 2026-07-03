@@ -1,8 +1,9 @@
 # ZSD_SALES_ORDER_REPORT
 
 Sales Order report for **SAP ERP (SAP ECC 6.0)** written in classical ABAP.
-It extracts Sales Order **Header / Item**, **Header status** and **Header long
-text** and presents them in an interactive ALV grid.
+It extracts Sales Order **Header / Item**, **Header status**, **Header & Item
+long text**, the **Sold-to name** and **status descriptions**, and presents
+them in an interactive ALV grid with **drill-down into VA03**.
 
 ## Data sources
 
@@ -11,16 +12,34 @@ text** and presents them in an interactive ALV grid.
 | `VBAK` | Sales Document: Header Data                         | Header (order type, sales org, sold-to, net value…) |
 | `VBAP` | Sales Document: Item Data                           | Item (material, qty, unit, plant, item net value…) |
 | `VBUK` | Sales Document: Header Status                       | Overall processing / delivery / billing / rejection status |
-| `STXH` | SAPscript Text File Header                          | Existence index for the header long text |
+| `STXH` | SAPscript Text File Header                          | Existence index for header **and** item long text |
+| `KNA1` | Customer Master                                    | Sold-to name (`NAME1`, joined on `KUNNR`) |
 
-The header **long text** itself is stored as SAPscript text, so `STXH` only
-serves as the fast existence index. The actual text lines are read through the
-standard function module **`READ_TEXT`** with:
+## Long texts
 
-- **Text object** `VBBK` (sales document header text)
-- **Text ID** `0001` (header note)
-- **Text name** = the sales document number (`VBELN`)
-- **Language** = logon language (`SY-LANGU`)
+Long texts are SAPscript texts, so `STXH` only serves as the fast existence
+index; the actual text lines are read through **`READ_TEXT`**:
+
+| Text     | Object | ID     | Name             |
+|----------|--------|--------|------------------|
+| Header   | `VBBK` | `0001` | `VBELN`          |
+| Item     | `VBBP` | `0001` | `VBELN` + `POSNR`|
+
+Language = logon language (`SY-LANGU`).
+
+## Status descriptions
+
+The single-character overall status fields `GBSTK` / `LFSTK` / `FKSTK` /
+`ABSTK` all use domain **`STATV`**. The report reads that domain's fixed-value
+texts once via `DD_DOMVALUES_GET` and shows both the raw code **and** its
+description (e.g. `A` → *Not yet processed*, `B` → *Partially processed*,
+`C` → *Completely processed*).
+
+## Drill-down
+
+Double-clicking any ALV row (`&IC1`) sets SPA/GPA parameter `AUN` to the sales
+document and calls transaction **`VA03`** (display sales order) skipping the
+first screen, via the `i_callback_user_command` callback.
 
 ## Selection screen
 
@@ -32,22 +51,27 @@ standard function module **`READ_TEXT`** with:
 | `S_KUNNR`   | Sold-to Party      |
 | `S_ERDAT`   | Created On         |
 | `P_TEXT`    | Read Header Long Text (checkbox, default on) |
+| `P_ITEXT`   | Read Item Long Text (checkbox, default on) |
 
 ## Logic
 
 1. Read `VBAK` by the selection criteria.
-2. Read `VBAP`, `VBUK` and `STXH` with `FOR ALL ENTRIES` on the selected headers.
-3. For each header, read the long text once via `READ_TEXT` (only when an
-   `STXH` index entry exists, to avoid unnecessary FM calls).
-4. Expand to one output row per item (headers without items still yield one row).
-5. Display the merged result with `REUSE_ALV_GRID_DISPLAY`.
+2. Read `VBAP`, `VBUK`, `KNA1` and the `STXH` indexes (`VBBK` header, `VBBP`
+   item) with `FOR ALL ENTRIES`.
+3. Load the `STATV` domain texts.
+4. For each header, read the header long text once; for each item, read the
+   item long text (only when an `STXH` index entry exists, to avoid needless
+   `READ_TEXT` calls).
+5. Expand to one output row per item (headers without items still yield one row).
+6. Display with `REUSE_ALV_GRID_DISPLAY`; double-click drills into `VA03`.
 
 ## Notes / adapting
 
-- The header text ID `0001` / object `VBBK` are the SAP standard for the sales
-  order header note. Adjust `TDID` / `TDOBJECT` if your configuration uses a
-  different text type.
-- On very high-volume systems consider replacing the header-loop item read with
-  a sorted/hashed access or restricting `VBAP` fields in the `SELECT`.
+- The text IDs `0001` / objects `VBBK` (header) and `VBBP` (item) are the SAP
+  standard for the sales order header/item notes. Adjust `TDID` / `TDOBJECT`
+  if your configuration uses a different text type.
+- `STXH-TDNAME` is `CHAR 70`; because old kernels require identical type and
+  length in a `FOR ALL ENTRIES` comparison, a `TDNAME`-typed driver table is
+  built before each `STXH` read.
 - Import into the system via the ABAP editor (SE38) creating report
   `ZSD_SALES_ORDER_REPORT`.

@@ -2,18 +2,26 @@
 *& Report  ZSD_SALES_ORDER_REPORT
 *&---------------------------------------------------------------------*
 *& Purpose : Sales Order reporting for SAP ERP (SAP ECC 6.0).
-*&           Reads Sales Order Header/Item data, Header status data and
-*&           Header long text, and displays them in an interactive ALV
-*&           grid list.
+*&           Reads Sales Order Header/Item data, Header status data,
+*&           Header long text and Item long text, the Sold-to name and
+*&           status descriptions, and displays them in an interactive
+*&           ALV grid with drill-down into VA03.
 *&
 *& Tables   : VBAK - Sales Document: Header Data
 *&            VBAP - Sales Document: Item Data
 *&            VBUK - Sales Document: Header Status and Administrative Data
 *&            STXH - SAPscript Text File Header (long text existence)
+*&            KNA1 - Customer Master (Sold-to name)
 *&
-*& Header long text is stored as SAPscript text. STXH is the text header
-*& index (object VBBK / text-id 0001 = sales order header note). The
-*& actual text lines are retrieved with function module READ_TEXT.
+*& Long texts are SAPscript texts. STXH is the text header index; the
+*& text lines are retrieved with function module READ_TEXT:
+*&   - Header text : object VBBK / id 0001 / name = VBELN
+*&   - Item text   : object VBBP / id 0001 / name = VBELN + POSNR
+*&
+*& Status descriptions (GBSTK/LFSTK/FKSTK/ABSTK) come from the fixed
+*& values of domain STATV.
+*&
+*& Double-click on a row opens the sales order in VA03.
 *&---------------------------------------------------------------------*
 REPORT zsd_sales_order_report LINE-SIZE 255.
 
@@ -39,6 +47,7 @@ TYPES: BEGIN OF ty_output,
          vtweg      TYPE vbak-vtweg,   " Distribution Channel
          spart      TYPE vbak-spart,   " Division
          kunnr      TYPE vbak-kunnr,   " Sold-to Party
+         name1      TYPE kna1-name1,   " Sold-to Name
          netwr_hdr  TYPE vbak-netwr,   " Net Value (Header)
          waerk      TYPE vbak-waerk,   " Document Currency
          posnr      TYPE vbap-posnr,   " Item Number
@@ -49,19 +58,36 @@ TYPES: BEGIN OF ty_output,
          netwr_itm  TYPE vbap-netwr,   " Net Value (Item)
          werks      TYPE vbap-werks,   " Plant
          gbstk      TYPE vbuk-gbstk,   " Overall Processing Status
+         gbstk_txt  TYPE dd07v-ddtext, " ...description
          lfstk      TYPE vbuk-lfstk,   " Overall Delivery Status
+         lfstk_txt  TYPE dd07v-ddtext, " ...description
          fkstk      TYPE vbuk-fkstk,   " Overall Billing Status
+         fkstk_txt  TYPE dd07v-ddtext, " ...description
          abstk      TYPE vbuk-abstk,   " Overall Rejection Status
+         abstk_txt  TYPE dd07v-ddtext, " ...description
          header_text TYPE string,      " Header long text (concatenated)
+         item_text   TYPE string,      " Item long text (concatenated)
        END OF ty_output.
 
 * Driver table for the STXH FOR ALL ENTRIES read. TDNAME is CHAR 70,
-* while VBAK-VBELN is CHAR 10 - old releases require identical type and
-* length in the FOR ALL ENTRIES comparison, so the key is typed here as
-* STXH-TDNAME.
+* while VBELN/VBELN+POSNR are shorter - old releases require identical
+* type and length in the FOR ALL ENTRIES comparison, so the key is typed
+* here as STXH-TDNAME.
 TYPES: BEGIN OF ty_name,
          tdname TYPE stxh-tdname,
        END OF ty_name.
+
+* Sold-to name buffer (KUNNR -> NAME1)
+TYPES: BEGIN OF ty_kna1,
+         kunnr TYPE kna1-kunnr,
+         name1 TYPE kna1-name1,
+       END OF ty_kna1.
+
+* Domain fixed-value text buffer (single-char status -> description)
+TYPES: BEGIN OF ty_statv,
+         domvalue TYPE dd07v-domvalue_l,
+         ddtext   TYPE dd07v-ddtext,
+       END OF ty_statv.
 
 *&---------------------------------------------------------------------*
 *& Global data
@@ -69,7 +95,11 @@ TYPES: BEGIN OF ty_name,
 DATA: gt_vbak   TYPE STANDARD TABLE OF vbak,
       gt_vbap   TYPE STANDARD TABLE OF vbap,
       gt_vbuk   TYPE STANDARD TABLE OF vbuk,
-      gt_stxh   TYPE STANDARD TABLE OF stxh,
+      gt_stxh   TYPE STANDARD TABLE OF stxh,   " header text index (VBBK)
+      gt_stxi   TYPE STANDARD TABLE OF stxh,   " item text index   (VBBP)
+      gt_kna1   TYPE STANDARD TABLE OF ty_kna1,
+      gt_statv  TYPE STANDARD TABLE OF ty_statv,
+      gs_statv  TYPE ty_statv,
       gt_names  TYPE STANDARD TABLE OF ty_name,
       gs_name   TYPE ty_name,
       gt_output TYPE STANDARD TABLE OF ty_output,
@@ -90,7 +120,8 @@ SELECT-OPTIONS: s_vbeln FOR vbak-vbeln,   " Sales Document
 SELECTION-SCREEN END OF BLOCK b1.
 
 SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE text-s02.
-PARAMETERS: p_text AS CHECKBOX DEFAULT 'X'.    " Read Header Long Text
+PARAMETERS: p_text  AS CHECKBOX DEFAULT 'X',   " Read Header Long Text
+            p_itext AS CHECKBOX DEFAULT 'X'.   " Read Item Long Text
 SELECTION-SCREEN END OF BLOCK b2.
 
 *&---------------------------------------------------------------------*
@@ -112,9 +143,13 @@ END-OF-SELECTION.
 *&---------------------------------------------------------------------*
 *&      Form  GET_DATA
 *&---------------------------------------------------------------------*
-*&      Read header, item, status and text-header data from the database
+*&      Read all data from the database
 *&---------------------------------------------------------------------*
 FORM get_data.
+
+  DATA: ls_vbak TYPE vbak,
+        ls_vbap TYPE vbap,
+        lv_name TYPE stxh-tdname.
 
 * --- Sales Order Header (VBAK) ---
   SELECT * FROM vbak
@@ -141,14 +176,19 @@ FORM get_data.
     FOR ALL ENTRIES IN gt_vbak
     WHERE vbeln = gt_vbak-vbeln.
 
+* --- Sold-to name (KNA1) ---
+  SELECT kunnr name1 FROM kna1
+    INTO TABLE gt_kna1
+    FOR ALL ENTRIES IN gt_vbak
+    WHERE kunnr = gt_vbak-kunnr.
+  SORT gt_kna1 BY kunnr.
+
 * --- Header Text index (STXH) : object VBBK / id 0001 ---
   IF p_text = abap_true.
-
-*   Build driver table with TDNAME-typed key (CHAR 70) from VBELN
-    DATA: ls_vbak_n TYPE vbak.
-    LOOP AT gt_vbak INTO ls_vbak_n.
+    CLEAR gt_names.
+    LOOP AT gt_vbak INTO ls_vbak.
       CLEAR gs_name.
-      gs_name-tdname = ls_vbak_n-vbeln.   " widening CHAR10 -> CHAR70
+      gs_name-tdname = ls_vbak-vbeln.     " widening CHAR10 -> CHAR70
       APPEND gs_name TO gt_names.
     ENDLOOP.
 
@@ -162,24 +202,113 @@ FORM get_data.
     ENDIF.
   ENDIF.
 
+* --- Item Text index (STXH) : object VBBP / id 0001 ---
+  IF p_itext = abap_true.
+    CLEAR gt_names.
+    LOOP AT gt_vbap INTO ls_vbap.
+      CLEAR gs_name.
+      CONCATENATE ls_vbap-vbeln ls_vbap-posnr INTO lv_name.
+      gs_name-tdname = lv_name.
+      APPEND gs_name TO gt_names.
+    ENDLOOP.
+
+    IF gt_names IS NOT INITIAL.
+      SELECT * FROM stxh
+        INTO TABLE gt_stxi
+        FOR ALL ENTRIES IN gt_names
+        WHERE tdobject = 'VBBP'
+          AND tdname   = gt_names-tdname
+          AND tdid     = '0001'.
+    ENDIF.
+  ENDIF.
+
+* --- Status descriptions (domain STATV fixed values) ---
+  PERFORM load_status_texts.
+
 * Sort internal tables for fast READ TABLE ... BINARY SEARCH
   SORT gt_vbap BY vbeln posnr.
   SORT gt_vbuk BY vbeln.
   SORT gt_stxh BY tdname.
+  SORT gt_stxi BY tdname.
 
 ENDFORM.                    "get_data
 
 *&---------------------------------------------------------------------*
+*&      Form  LOAD_STATUS_TEXTS
+*&---------------------------------------------------------------------*
+*&      Read the fixed-value descriptions of domain STATV, shared by the
+*&      overall status fields GBSTK / LFSTK / FKSTK / ABSTK.
+*&---------------------------------------------------------------------*
+FORM load_status_texts.
+
+  DATA: lt_dd07v TYPE STANDARD TABLE OF dd07v,
+        ls_dd07v TYPE dd07v.
+
+  CALL FUNCTION 'DD_DOMVALUES_GET'
+    EXPORTING
+      domname        = 'STATV'
+      text           = 'X'
+      langu          = sy-langu
+    TABLES
+      dd07v_tab      = lt_dd07v
+    EXCEPTIONS
+      wrong_textflag = 1
+      OTHERS         = 2.
+
+  IF sy-subrc <> 0.
+    RETURN.
+  ENDIF.
+
+  LOOP AT lt_dd07v INTO ls_dd07v.
+    CLEAR gs_statv.
+    gs_statv-domvalue = ls_dd07v-domvalue_l.
+    gs_statv-ddtext   = ls_dd07v-ddtext.
+    APPEND gs_statv TO gt_statv.
+  ENDLOOP.
+
+  SORT gt_statv BY domvalue.
+
+ENDFORM.                    "load_status_texts
+
+*&---------------------------------------------------------------------*
+*&      Form  STATUS_TEXT
+*&---------------------------------------------------------------------*
+*&      Return the description of a single-char status code.
+*&---------------------------------------------------------------------*
+FORM status_text USING    iv_code TYPE c
+                 CHANGING cv_text TYPE dd07v-ddtext.
+
+  CLEAR cv_text.
+  IF iv_code IS INITIAL.
+    RETURN.
+  ENDIF.
+
+  READ TABLE gt_statv INTO gs_statv
+       WITH KEY domvalue = iv_code BINARY SEARCH.
+  IF sy-subrc = 0.
+    cv_text = gs_statv-ddtext.
+  ENDIF.
+
+ENDFORM.                    "status_text
+
+*&---------------------------------------------------------------------*
 *&      Form  BUILD_OUTPUT
 *&---------------------------------------------------------------------*
-*&      Merge header, item, status and long text into the output table
+*&      Merge header, item, status, texts and names into the output table
 *&---------------------------------------------------------------------*
 FORM build_output.
 
   DATA: ls_vbak TYPE vbak,
         ls_vbap TYPE vbap,
         ls_vbuk TYPE vbuk,
-        lv_text TYPE string.
+        ls_kna1 TYPE ty_kna1,
+        lv_htext TYPE string,
+        lv_itext TYPE string,
+        lv_name1     TYPE kna1-name1,
+        lv_gbstk_txt TYPE dd07v-ddtext,
+        lv_lfstk_txt TYPE dd07v-ddtext,
+        lv_fkstk_txt TYPE dd07v-ddtext,
+        lv_abstk_txt TYPE dd07v-ddtext.
 
   LOOP AT gt_vbak INTO ls_vbak.
 
@@ -188,11 +317,25 @@ FORM build_output.
     READ TABLE gt_vbuk INTO ls_vbuk
          WITH KEY vbeln = ls_vbak-vbeln BINARY SEARCH.
 
+*   Status descriptions (header level - compute once per header)
+    PERFORM status_text USING ls_vbuk-gbstk CHANGING lv_gbstk_txt.
+    PERFORM status_text USING ls_vbuk-lfstk CHANGING lv_lfstk_txt.
+    PERFORM status_text USING ls_vbuk-fkstk CHANGING lv_fkstk_txt.
+    PERFORM status_text USING ls_vbuk-abstk CHANGING lv_abstk_txt.
+
+*   Sold-to name (KNA1)
+    CLEAR lv_name1.
+    READ TABLE gt_kna1 INTO ls_kna1
+         WITH KEY kunnr = ls_vbak-kunnr BINARY SEARCH.
+    IF sy-subrc = 0.
+      lv_name1 = ls_kna1-name1.
+    ENDIF.
+
 *   Header long text (read once per header)
-    CLEAR lv_text.
+    CLEAR lv_htext.
     IF p_text = abap_true.
       PERFORM read_header_text USING ls_vbak-vbeln
-                            CHANGING lv_text.
+                            CHANGING lv_htext.
     ENDIF.
 
 *   Expand items - one output row per item
@@ -209,6 +352,7 @@ FORM build_output.
       gs_output-vtweg     = ls_vbak-vtweg.
       gs_output-spart     = ls_vbak-spart.
       gs_output-kunnr     = ls_vbak-kunnr.
+      gs_output-name1     = lv_name1.
       gs_output-netwr_hdr = ls_vbak-netwr.
       gs_output-waerk     = ls_vbak-waerk.
 
@@ -221,14 +365,26 @@ FORM build_output.
       gs_output-netwr_itm = ls_vbap-netwr.
       gs_output-werks     = ls_vbap-werks.
 
-*     Status fields
+*     Status fields (code + description)
       gs_output-gbstk     = ls_vbuk-gbstk.
+      gs_output-gbstk_txt = lv_gbstk_txt.
       gs_output-lfstk     = ls_vbuk-lfstk.
+      gs_output-lfstk_txt = lv_lfstk_txt.
       gs_output-fkstk     = ls_vbuk-fkstk.
+      gs_output-fkstk_txt = lv_fkstk_txt.
       gs_output-abstk     = ls_vbuk-abstk.
+      gs_output-abstk_txt = lv_abstk_txt.
 
 *     Header long text
-      gs_output-header_text = lv_text.
+      gs_output-header_text = lv_htext.
+
+*     Item long text (read per item)
+      CLEAR lv_itext.
+      IF p_itext = abap_true.
+        PERFORM read_item_text USING ls_vbap-vbeln ls_vbap-posnr
+                            CHANGING lv_itext.
+      ENDIF.
+      gs_output-item_text = lv_itext.
 
       APPEND gs_output TO gt_output.
     ENDLOOP.
@@ -244,13 +400,18 @@ FORM build_output.
       gs_output-vtweg       = ls_vbak-vtweg.
       gs_output-spart       = ls_vbak-spart.
       gs_output-kunnr       = ls_vbak-kunnr.
+      gs_output-name1       = lv_name1.
       gs_output-netwr_hdr   = ls_vbak-netwr.
       gs_output-waerk       = ls_vbak-waerk.
       gs_output-gbstk       = ls_vbuk-gbstk.
+      gs_output-gbstk_txt   = lv_gbstk_txt.
       gs_output-lfstk       = ls_vbuk-lfstk.
+      gs_output-lfstk_txt   = lv_lfstk_txt.
       gs_output-fkstk       = ls_vbuk-fkstk.
+      gs_output-fkstk_txt   = lv_fkstk_txt.
       gs_output-abstk       = ls_vbuk-abstk.
-      gs_output-header_text = lv_text.
+      gs_output-abstk_txt   = lv_abstk_txt.
+      gs_output-header_text = lv_htext.
       APPEND gs_output TO gt_output.
     ENDIF.
 
@@ -314,6 +475,63 @@ FORM read_header_text USING    iv_vbeln TYPE vbak-vbeln
 ENDFORM.                    "read_header_text
 
 *&---------------------------------------------------------------------*
+*&      Form  READ_ITEM_TEXT
+*&---------------------------------------------------------------------*
+*&      Read the sales order item long text via READ_TEXT.
+*&      Text object VBBP / id 0001 / name = VBELN + POSNR.
+*&      Only items that have an STXH entry are read (performance).
+*&---------------------------------------------------------------------*
+FORM read_item_text USING    iv_vbeln TYPE vbap-vbeln
+                             iv_posnr TYPE vbap-posnr
+                    CHANGING cv_text  TYPE string.
+
+  DATA: lt_lines TYPE STANDARD TABLE OF tline,
+        ls_line  TYPE tline,
+        lv_name  TYPE thead-tdname.
+
+  CONCATENATE iv_vbeln iv_posnr INTO lv_name.
+
+* Only read text if index entry exists in STXH
+  READ TABLE gt_stxi TRANSPORTING NO FIELDS
+       WITH KEY tdname = lv_name BINARY SEARCH.
+  IF sy-subrc <> 0.
+    RETURN.
+  ENDIF.
+
+  CALL FUNCTION 'READ_TEXT'
+    EXPORTING
+      id                      = '0001'
+      language                = sy-langu
+      name                    = lv_name
+      object                  = 'VBBP'
+    TABLES
+      lines                   = lt_lines
+    EXCEPTIONS
+      id                      = 1
+      language                = 2
+      name                    = 3
+      not_found               = 4
+      object                  = 5
+      reference_check         = 6
+      wrong_access_to_archive = 7
+      OTHERS                  = 8.
+
+  IF sy-subrc <> 0.
+    RETURN.
+  ENDIF.
+
+  LOOP AT lt_lines INTO ls_line.
+    IF cv_text IS INITIAL.
+      cv_text = ls_line-tdline.
+    ELSE.
+      CONCATENATE cv_text ls_line-tdline
+             INTO cv_text SEPARATED BY space.
+    ENDIF.
+  ENDLOOP.
+
+ENDFORM.                    "read_item_text
+
+*&---------------------------------------------------------------------*
 *&      Form  BUILD_FIELDCAT
 *&---------------------------------------------------------------------*
 *&      Build the ALV field catalog
@@ -340,6 +558,7 @@ FORM build_fieldcat.
   add_field 'VTWEG'      'Distr. Channel'       2.
   add_field 'SPART'      'Division'             2.
   add_field 'KUNNR'      'Sold-to Party'       10.
+  add_field 'NAME1'      'Sold-to Name'        35.
   add_field 'NETWR_HDR'  'Net Value (Hdr)'     15.
   add_field 'WAERK'      'Currency'             5.
   add_field 'POSNR'      'Item'                 6.
@@ -349,11 +568,16 @@ FORM build_fieldcat.
   add_field 'VRKME'      'Unit'                 3.
   add_field 'NETWR_ITM'  'Net Value (Item)'    15.
   add_field 'WERKS'      'Plant'                4.
-  add_field 'GBSTK'      'Overall Status'       1.
-  add_field 'LFSTK'      'Delivery Status'      1.
-  add_field 'FKSTK'      'Billing Status'       1.
-  add_field 'ABSTK'      'Rejection Status'     1.
+  add_field 'GBSTK'      'Ov. Status'           3.
+  add_field 'GBSTK_TXT'  'Overall Status Desc' 20.
+  add_field 'LFSTK'      'Dlv. Status'          3.
+  add_field 'LFSTK_TXT'  'Delivery Status Desc' 20.
+  add_field 'FKSTK'      'Bill. Status'         3.
+  add_field 'FKSTK_TXT'  'Billing Status Desc' 20.
+  add_field 'ABSTK'      'Rej. Status'          3.
+  add_field 'ABSTK_TXT'  'Rejection Status Desc' 20.
   add_field 'HEADER_TEXT' 'Header Text'        60.
+  add_field 'ITEM_TEXT'  'Item Text'           60.
 
 ENDFORM.                    "build_fieldcat
 
@@ -369,15 +593,16 @@ FORM display_alv.
 
   CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
     EXPORTING
-      i_callback_program = sy-repid
-      is_layout          = gs_layout
-      it_fieldcat        = gt_fieldcat
-      i_save             = 'A'
+      i_callback_program       = sy-repid
+      i_callback_user_command  = 'USER_COMMAND'
+      is_layout                = gs_layout
+      it_fieldcat              = gt_fieldcat
+      i_save                   = 'A'
     TABLES
-      t_outtab           = gt_output
+      t_outtab                 = gt_output
     EXCEPTIONS
-      program_error      = 1
-      OTHERS             = 2.
+      program_error            = 1
+      OTHERS                   = 2.
 
   IF sy-subrc <> 0.
     MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
@@ -385,3 +610,24 @@ FORM display_alv.
   ENDIF.
 
 ENDFORM.                    "display_alv
+
+*&---------------------------------------------------------------------*
+*&      Form  USER_COMMAND
+*&---------------------------------------------------------------------*
+*&      ALV callback. Double-click (&IC1) opens the sales order in VA03.
+*&      Called by REUSE_ALV_GRID_DISPLAY - signature is fixed.
+*&---------------------------------------------------------------------*
+FORM user_command USING r_ucomm     TYPE sy-ucomm
+                        rs_selfield TYPE slis_selfield.
+
+  CASE r_ucomm.
+    WHEN '&IC1'.                       " double-click / pick
+      CLEAR gs_output.
+      READ TABLE gt_output INTO gs_output INDEX rs_selfield-tabindex.
+      IF sy-subrc = 0 AND gs_output-vbeln IS NOT INITIAL.
+        SET PARAMETER ID 'AUN' FIELD gs_output-vbeln.
+        CALL TRANSACTION 'VA03' AND SKIP FIRST SCREEN.
+      ENDIF.
+  ENDCASE.
+
+ENDFORM.                    "user_command
