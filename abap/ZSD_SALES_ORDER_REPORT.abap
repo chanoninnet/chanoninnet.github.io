@@ -46,7 +46,7 @@ TYPES: BEGIN OF ty_output,
          gbstk      TYPE vbuk-gbstk,   " Overall Processing Status
          lfstk      TYPE vbuk-lfstk,   " Overall Delivery Status
          fkstk      TYPE vbuk-fkstk,   " Overall Billing Status
-         absta      TYPE vbuk-absta,   " Overall Rejection Status
+         abstk      TYPE vbuk-abstk,   " Overall Rejection Status
          header_text TYPE string,      " Header long text (concatenated)
        END OF ty_output.
 
@@ -199,7 +199,7 @@ FORM build_output.
       gs_output-gbstk     = ls_vbuk-gbstk.
       gs_output-lfstk     = ls_vbuk-lfstk.
       gs_output-fkstk     = ls_vbuk-fkstk.
-      gs_output-absta     = ls_vbuk-absta.
+      gs_output-abstk     = ls_vbuk-abstk.
 
 *     Header long text
       gs_output-header_text = lv_text.
@@ -223,7 +223,7 @@ FORM build_output.
       gs_output-gbstk       = ls_vbuk-gbstk.
       gs_output-lfstk       = ls_vbuk-lfstk.
       gs_output-fkstk       = ls_vbuk-fkstk.
-      gs_output-absta       = ls_vbuk-absta.
+      gs_output-abstk       = ls_vbuk-abstk.
       gs_output-header_text = lv_text.
       APPEND gs_output TO gt_output.
     ENDIF.
@@ -326,7 +326,7 @@ FORM build_fieldcat.
   add_field 'GBSTK'      'Overall Status'       1.
   add_field 'LFSTK'      'Delivery Status'      1.
   add_field 'FKSTK'      'Billing Status'       1.
-  add_field 'ABSTA'      'Rejection Status'     1.
+  add_field 'ABSTK'      'Rejection Status'     1.
   add_field 'HEADER_TEXT' 'Header Text'        60.
 
 ENDFORM.                    "build_fieldcat
