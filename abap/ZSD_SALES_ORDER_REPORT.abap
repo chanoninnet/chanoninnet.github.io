@@ -82,6 +82,8 @@ TYPES: BEGIN OF ty_output,
          fkstk_txt TYPE dd07v-ddtext,
          abstk     TYPE vbuk-abstk,
          abstk_txt TYPE dd07v-ddtext,
+         cmgst     TYPE vbuk-cmgst,       " Overall blocked (credit) status
+         cmgst_txt TYPE vbstt-spstg_bez,  " ...description
          vkbur     TYPE vbak-vkbur,
          vkgrp     TYPE vbak-vkgrp,
          vkorg     TYPE vbak-vkorg,
@@ -189,6 +191,8 @@ DATA: gt_vbak   TYPE STANDARD TABLE OF vbak,
       gt_stxi   TYPE STANDARD TABLE OF stxh,   " item text index   (VBBP)
       gt_statv  TYPE STANDARD TABLE OF ty_statv,
       gs_statv  TYPE ty_statv,
+      gt_cmgst  TYPE STANDARD TABLE OF ty_statv,   " CMGST domain texts
+      gs_cmgst  TYPE ty_statv,
       gt_ttxit  TYPE STANDARD TABLE OF ty_ttxit,
       gs_ttxit  TYPE ty_ttxit,
       gt_names  TYPE STANDARD TABLE OF ty_name,
@@ -395,6 +399,9 @@ FORM get_data.
 * --- Status descriptions (domain STATV fixed values) ---
   PERFORM load_status_texts.
 
+* --- Overall blocked (credit) status descriptions (domain CMGST) ---
+  PERFORM load_cmgst_texts.
+
 * Sort internal tables for fast READ TABLE ... BINARY SEARCH
   SORT gt_vbap BY vbeln posnr.
   SORT gt_vbep BY vbeln posnr etenr.
@@ -459,6 +466,65 @@ FORM status_text USING    iv_code TYPE c
   ENDIF.
 
 ENDFORM.                    "status_text
+
+*&---------------------------------------------------------------------*
+*&      Form  LOAD_CMGST_TEXTS
+*&---------------------------------------------------------------------*
+*&      Read the fixed-value descriptions of domain CMGST (overall credit
+*&      / blocked status). Degrades gracefully (no text) if the domain
+*&      name differs on this system.
+*&---------------------------------------------------------------------*
+FORM load_cmgst_texts.
+
+  DATA: lt_dd07v TYPE STANDARD TABLE OF dd07v,
+        ls_dd07v TYPE dd07v.
+
+  CALL FUNCTION 'DD_DOMVALUES_GET'
+    EXPORTING
+      domname        = 'CMGST'
+      text           = 'X'
+      langu          = sy-langu
+    TABLES
+      dd07v_tab      = lt_dd07v
+    EXCEPTIONS
+      wrong_textflag = 1
+      OTHERS         = 2.
+
+  IF sy-subrc <> 0.
+    RETURN.
+  ENDIF.
+
+  LOOP AT lt_dd07v INTO ls_dd07v.
+    CLEAR gs_cmgst.
+    gs_cmgst-domvalue = ls_dd07v-domvalue_l.
+    gs_cmgst-ddtext   = ls_dd07v-ddtext.
+    APPEND gs_cmgst TO gt_cmgst.
+  ENDLOOP.
+
+  SORT gt_cmgst BY domvalue.
+
+ENDFORM.                    "load_cmgst_texts
+
+*&---------------------------------------------------------------------*
+*&      Form  CMGST_TEXT
+*&---------------------------------------------------------------------*
+*&      Return the description of an overall blocked/credit status code.
+*&---------------------------------------------------------------------*
+FORM cmgst_text USING    iv_code TYPE c
+                CHANGING cv_text TYPE vbstt-spstg_bez.
+
+  CLEAR cv_text.
+  IF iv_code IS INITIAL.
+    RETURN.
+  ENDIF.
+
+  READ TABLE gt_cmgst INTO gs_cmgst
+       WITH KEY domvalue = iv_code BINARY SEARCH.
+  IF sy-subrc = 0.
+    cv_text = gs_cmgst-ddtext.
+  ENDIF.
+
+ENDFORM.                    "cmgst_text
 
 *&---------------------------------------------------------------------*
 *&      Form  BUILD_OUTPUT
@@ -665,6 +731,8 @@ FORM fill_row USING is_vbak TYPE vbak
   PERFORM status_text USING is_vbuk-lfstk CHANGING gs_output-lfstk_txt.
   PERFORM status_text USING is_vbuk-fkstk CHANGING gs_output-fkstk_txt.
   PERFORM status_text USING is_vbuk-abstk CHANGING gs_output-abstk_txt.
+  gs_output-cmgst = is_vbuk-cmgst.
+  PERFORM cmgst_text USING is_vbuk-cmgst CHANGING gs_output-cmgst_txt.
 
 * Long texts
   gs_output-header_text = iv_htext.
@@ -909,6 +977,8 @@ FORM build_fieldcat.
   add_field 'FKSTK_TXT' 'Billing Status Desc' 20.
   add_field 'ABSTK'     'Rej. Status'         3.
   add_field 'ABSTK_TXT' 'Rejection Status Desc' 20.
+  add_field 'CMGST'     'Ov. Blk Status'      3.
+  add_field 'CMGST_TXT' 'Overall Blocked Status' 25.
 
 * --- Long-text columns last ---
   add_field 'HEADER_TEXT' 'Header Text (0001)' 60.
