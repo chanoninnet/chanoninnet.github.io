@@ -82,8 +82,10 @@ TYPES: BEGIN OF ty_output,
          fkstk_txt TYPE dd07v-ddtext,
          abstk     TYPE vbuk-abstk,
          abstk_txt TYPE dd07v-ddtext,
-         cmgst     TYPE vbuk-cmgst,       " Overall blocked (credit) status
-         cmgst_txt TYPE vbstt-spstg_bez,  " ...description
+         cmgst     TYPE vbuk-cmgst,       " Credit status (VBUK-CMGST)
+         cmgst_txt TYPE dd07v-ddtext,     " ...description
+         spstg     TYPE c LENGTH 1,       " Overall blocked status code (B = blocked)
+         spstg_txt TYPE vbstt-spstg_bez,  " Overall blocked status description
          vkbur     TYPE vbak-vkbur,
          vkgrp     TYPE vbak-vkgrp,
          vkorg     TYPE vbak-vkorg,
@@ -729,6 +731,17 @@ FORM fill_row USING is_vbak TYPE vbak
   gs_output-cmgst = is_vbuk-cmgst.
   PERFORM cmgst_text USING is_vbuk-cmgst CHANGING gs_output-cmgst_txt.
 
+* Overall blocked status: 'Blocked' if any of the three header blocks is
+* active - credit not OK (CMGST = B), delivery block (LSSTK) or billing
+* block (FSSTK).
+  CLEAR: gs_output-spstg, gs_output-spstg_txt.
+  IF is_vbuk-cmgst = 'B'
+     OR is_vbuk-lsstk IS NOT INITIAL
+     OR is_vbuk-fsstk IS NOT INITIAL.
+    gs_output-spstg     = 'B'.
+    gs_output-spstg_txt = 'Blocked'.
+  ENDIF.
+
 * Long texts
   gs_output-header_text = iv_htext.
   gs_output-text_z020   = iv_z020.
@@ -972,8 +985,10 @@ FORM build_fieldcat.
   add_field 'FKSTK_TXT' 'Billing Status Desc' 20.
   add_field 'ABSTK'     'Rej. Status'         3.
   add_field 'ABSTK_TXT' 'Rejection Status Desc' 20.
-  add_field 'CMGST'     'Ov. Blk Status'      3.
-  add_field 'CMGST_TXT' 'Overall Blocked Status' 25.
+  add_field 'CMGST'     'Credit Status'       3.
+  add_field 'CMGST_TXT' 'Credit Status Desc'  20.
+  add_field 'SPSTG'     'Blk'                 1.
+  add_field 'SPSTG_TXT' 'Overall Blocked Status' 20.
 
 * --- Long-text columns last ---
   add_field 'HEADER_TEXT' 'Header Text (0001)' 60.
