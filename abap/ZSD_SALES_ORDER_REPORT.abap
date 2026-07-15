@@ -40,6 +40,7 @@ TABLES: vbak, vbap.
 *&---------------------------------------------------------------------*
 * Output line - columns in the requested order, texts appended last.
 TYPES: BEGIN OF ty_output,
+         flag      TYPE c LENGTH 1,       " first column color flag (traffic light)
          vbeln     TYPE vbak-vbeln,
          posnr     TYPE vbap-posnr,
          etenr     TYPE vbep-etenr,
@@ -134,6 +135,8 @@ TYPES: BEGIN OF ty_output,
          text_z037   TYPE string,
          text_z086   TYPE string,
          item_text   TYPE string,
+*        cell color table (drives the FLAG column colour)
+         cellcolors  TYPE slis_t_specialcol_alv,
        END OF ty_output.
 
 * Lean schedule-line buffer (VBEP)
@@ -749,9 +752,65 @@ FORM fill_row USING is_vbak TYPE vbak
   gs_output-text_z086   = iv_z086.
   gs_output-item_text   = iv_itext.
 
+* Colour flag for the first column (depends on blocked status + header text)
+  PERFORM set_flag_color CHANGING gs_output.
+
   APPEND gs_output TO gt_output.
 
 ENDFORM.                    "fill_row
+
+*&---------------------------------------------------------------------*
+*&      Form  SET_FLAG_COLOR
+*&---------------------------------------------------------------------*
+*&      Colour the first column (FLAG) from the Overall Blocked Status
+*&      (SPSTG_TXT) and the header long text (HEADER_TEXT):
+*&        - not Blocked & header text blank            -> Green  (5)
+*&        - not Blocked & header text 'รอโอน'/'รอปล่อย'  -> Yellow (3)
+*&        - Blocked     & header text blank/รอโอน/รอปล่อย -> Yellow (3)
+*&      Any other combination is left un-coloured.
+*&---------------------------------------------------------------------*
+FORM set_flag_color CHANGING cs_output TYPE ty_output.
+
+  DATA: ls_scol TYPE slis_specialcol_alv,
+        lv_wait TYPE flag,
+        lv_col  TYPE i.
+
+  CLEAR cs_output-cellcolors.
+
+* Header-text state: 'waiting' if it contains รอโอน or รอปล่อย
+  lv_wait = space.
+  IF cs_output-header_text CS 'รอโอน'
+     OR cs_output-header_text CS 'รอปล่อย'.
+    lv_wait = 'X'.
+  ENDIF.
+
+  CLEAR lv_col.
+  IF cs_output-spstg_txt <> 'Blocked'.
+*   Not blocked
+    IF cs_output-header_text IS INITIAL.
+      lv_col = 5.            " Green  - not blocked, no header text
+    ELSEIF lv_wait = 'X'.
+      lv_col = 3.            " Yellow - not blocked, waiting text
+    ENDIF.
+  ELSE.
+*   Blocked
+    IF cs_output-header_text IS INITIAL OR lv_wait = 'X'.
+      lv_col = 3.            " Yellow - blocked
+    ENDIF.
+  ENDIF.
+
+  IF lv_col IS INITIAL.
+    RETURN.
+  ENDIF.
+
+  CLEAR ls_scol.
+  ls_scol-fieldname = 'FLAG'.
+  ls_scol-color-col = lv_col.   " 5 = green (COL_POSITIVE), 3 = yellow (COL_TOTAL)
+  ls_scol-color-int = 1.        " intensified
+  ls_scol-color-inv = 0.
+  APPEND ls_scol TO cs_output-cellcolors.
+
+ENDFORM.                    "set_flag_color
 
 *&---------------------------------------------------------------------*
 *&      Form  READ_HEADER_TEXT_ID
@@ -898,6 +957,9 @@ FORM build_fieldcat.
   PERFORM get_id_desc USING 'Z037' CHANGING lv_d037.
   PERFORM get_id_desc USING 'Z086' CHANGING lv_d086.
 
+* --- Colour flag (first column) ---
+  add_field 'FLAG'      'St'                  3.
+
 * --- Columns in the requested order ---
   add_field 'VBELN'     'Sales Document'     10.
   add_field 'POSNR'     'Item'                6.
@@ -1032,6 +1094,7 @@ FORM display_alv.
 
   gs_layout-colwidth_optimize = abap_true.
   gs_layout-zebra             = abap_true.
+  gs_layout-coltab_fieldname  = 'CELLCOLORS'.   " per-cell colours (FLAG column)
 
 * Layout variant (report + variant chosen on the selection screen)
   CLEAR gs_variant.
