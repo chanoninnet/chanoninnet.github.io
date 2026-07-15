@@ -766,7 +766,7 @@ ENDFORM.                    "fill_row
 *&      (SPSTG_TXT) and the header long text (HEADER_TEXT):
 *&        - not Blocked & header text blank            -> Green  (5)
 *&        - not Blocked & header text 'รอโอน'/'รอปล่อย'  -> Yellow (3)
-*&        - Blocked     & header text blank/รอโอน/รอปล่อย -> Yellow (3)
+*&        - Blocked     & header text blank/รอโอน/รอปล่อย -> Red    (6)
 *&      Any other combination is left un-coloured.
 *&---------------------------------------------------------------------*
 FORM set_flag_color CHANGING cs_output TYPE ty_output.
@@ -795,7 +795,7 @@ FORM set_flag_color CHANGING cs_output TYPE ty_output.
   ELSE.
 *   Blocked
     IF cs_output-header_text IS INITIAL OR lv_wait = 'X'.
-      lv_col = 3.            " Yellow - blocked
+      lv_col = 6.            " Red - blocked
     ENDIF.
   ENDIF.
 
@@ -805,7 +805,7 @@ FORM set_flag_color CHANGING cs_output TYPE ty_output.
 
   CLEAR ls_scol.
   ls_scol-fieldname = 'FLAG'.
-  ls_scol-color-col = lv_col.   " 5 = green (COL_POSITIVE), 3 = yellow (COL_TOTAL)
+  ls_scol-color-col = lv_col.   " 5=green (POSITIVE), 3=yellow (TOTAL), 6=red (NEGATIVE)
   ls_scol-color-int = 1.        " intensified
   ls_scol-color-inv = 0.
   APPEND ls_scol TO cs_output-cellcolors.
