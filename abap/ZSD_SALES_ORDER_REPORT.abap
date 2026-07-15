@@ -510,7 +510,7 @@ ENDFORM.                    "load_cmgst_texts
 *&      Return the description of an overall blocked/credit status code.
 *&---------------------------------------------------------------------*
 FORM cmgst_text USING    iv_code TYPE c
-                CHANGING cv_text TYPE vbstt-spstg_bez.
+                CHANGING cv_text TYPE dd07v-ddtext.
 
   CLEAR cv_text.
   IF iv_code IS INITIAL.
