@@ -209,16 +209,16 @@ RANGES: gr_tdid FOR stxh-tdid.
 *& Selection screen
 *&---------------------------------------------------------------------*
 SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE text-s01.
-SELECT-OPTIONS: s_werks FOR vbap-werks,   " Plant
-                s_vbeln FOR vbak-vbeln,   " Sales Document
-                s_auart FOR vbak-auart,   " Order Type
-                s_vkorg FOR vbak-vkorg,   " Sales Organization
-                s_vtweg FOR vbak-vtweg,   " Distribution Channel
-                s_spart FOR vbak-spart,   " Division
-                s_vkbur FOR vbak-vkbur,   " Sales Office
-                s_vkgrp FOR vbak-vkgrp,   " Sales Group
-                s_kunnr FOR vbak-kunnr,   " Sold-to Party
-                s_erdat FOR vbak-erdat.   " Created On
+SELECT-OPTIONS: s_werks FOR vbap-werks DEFAULT '3100',   " Plant
+                s_vbeln FOR vbak-vbeln,                  " Sales Document
+                s_auart FOR vbak-auart,                  " Order Type
+                s_vkorg FOR vbak-vkorg DEFAULT '3000',   " Sales Organization
+                s_vtweg FOR vbak-vtweg DEFAULT '10',     " Distribution Channel
+                s_spart FOR vbak-spart DEFAULT '00',     " Division
+                s_vkbur FOR vbak-vkbur,                  " Sales Office
+                s_vkgrp FOR vbak-vkgrp,                  " Sales Group
+                s_kunnr FOR vbak-kunnr,                  " Sold-to Party
+                s_erdat FOR vbak-erdat.                  " Created On (last 30 days, set in INITIALIZATION)
 SELECTION-SCREEN END OF BLOCK b1.
 
 SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE text-s02.
@@ -231,6 +231,16 @@ SELECTION-SCREEN END OF BLOCK b2.
 SELECTION-SCREEN BEGIN OF BLOCK b3 WITH FRAME TITLE text-s03.
 PARAMETERS: p_vari TYPE disvariant-variant.    " ALV Layout Variant
 SELECTION-SCREEN END OF BLOCK b3.
+
+*&---------------------------------------------------------------------*
+*& Initialization - default Created On to the last 30 days
+*&---------------------------------------------------------------------*
+INITIALIZATION.
+  s_erdat-sign   = 'I'.
+  s_erdat-option = 'BT'.
+  s_erdat-low    = sy-datum - 30.
+  s_erdat-high   = sy-datum.
+  APPEND s_erdat.
 
 *&---------------------------------------------------------------------*
 *& Selection-screen events
