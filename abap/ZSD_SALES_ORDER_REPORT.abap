@@ -227,8 +227,7 @@ SELECTION-SCREEN END OF BLOCK b1.
 
 SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE text-s02.
 PARAMETERS: p_lfstc AS CHECKBOX,               " Only not completed delivery (LFSTK <> C)
-            p_text  AS CHECKBOX DEFAULT 'X',   " Read Header Long Text
-            p_itext AS CHECKBOX DEFAULT 'X'.   " Read Item Long Text
+            p_text  AS CHECKBOX DEFAULT 'X'.   " Read Header Long Text
 
 SELECTION-SCREEN END OF BLOCK b2.
 
@@ -377,23 +376,21 @@ FORM get_data.
   ENDIF.
 
 * --- Item Text index (STXH) : object VBBP / id 0001 ---
-  IF p_itext = abap_true.
-    CLEAR gt_names.
-    LOOP AT gt_vbap INTO ls_vbap.
-      CLEAR gs_name.
-      CONCATENATE ls_vbap-vbeln ls_vbap-posnr INTO lv_name.
-      gs_name-tdname = lv_name.
-      APPEND gs_name TO gt_names.
-    ENDLOOP.
+  CLEAR gt_names.
+  LOOP AT gt_vbap INTO ls_vbap.
+    CLEAR gs_name.
+    CONCATENATE ls_vbap-vbeln ls_vbap-posnr INTO lv_name.
+    gs_name-tdname = lv_name.
+    APPEND gs_name TO gt_names.
+  ENDLOOP.
 
-    IF gt_names IS NOT INITIAL.
-      SELECT * FROM stxh
-        INTO TABLE gt_stxi
-        FOR ALL ENTRIES IN gt_names
-        WHERE tdobject = 'VBBP'
-          AND tdname   = gt_names-tdname
-          AND tdid     = '0001'.
-    ENDIF.
+  IF gt_names IS NOT INITIAL.
+    SELECT * FROM stxh
+      INTO TABLE gt_stxi
+      FOR ALL ENTRIES IN gt_names
+      WHERE tdobject = 'VBBP'
+        AND tdname   = gt_names-tdname
+        AND tdid     = '0001'.
   ENDIF.
 
 * --- Status descriptions (domain STATV fixed values) ---
@@ -600,10 +597,8 @@ FORM build_output.
 
 *     Item long text
       CLEAR lv_itext.
-      IF p_itext = abap_true.
-        PERFORM read_item_text USING ls_vbap-vbeln ls_vbap-posnr
-                            CHANGING lv_itext.
-      ENDIF.
+      PERFORM read_item_text USING ls_vbap-vbeln ls_vbap-posnr
+                          CHANGING lv_itext.
 
 *     Schedule lines (VBEP) - one output row each
       lv_found = space.
@@ -993,9 +988,6 @@ FORM build_fieldcat.
     PERFORM hide_field USING 'TEXT_Z020'.
     PERFORM hide_field USING 'TEXT_Z037'.
     PERFORM hide_field USING 'TEXT_Z086'.
-  ENDIF.
-  IF p_itext <> abap_true.
-    PERFORM hide_field USING 'ITEM_TEXT'.
   ENDIF.
 
 ENDFORM.                    "build_fieldcat
