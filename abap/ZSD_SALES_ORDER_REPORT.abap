@@ -766,7 +766,7 @@ ENDFORM.                    "fill_row
 *&      GBSTK LFSTK ABSTK Blocked HeaderText          Light
 *&      ----- ----- ----- ------- ------------------- ------------
 *&        B     A     A   Notblk  space / '.'         Green
-*&        B     A     A   Notblk  'รอโอน'              Yellow
+*&        B     A     A   Notblk  'รอโอน'/'รอปล่อย'     Yellow
 *&        *     *     *   Blocked *                   Red
 *&        C     *     C   *       *                   (blank)
 *&        C     C     A   *       *                   (blank)
@@ -791,9 +791,10 @@ FORM set_flag_color CHANGING cs_output TYPE ty_output.
     lv_blank = 'X'.
   ENDIF.
 
-* Header text 'waiting for transfer' (รอโอน)
+* Header text 'waiting' (รอโอน = waiting for transfer, รอปล่อย = waiting for release)
   lv_wait = space.
-  IF cs_output-header_text CS 'รอโอน'.
+  IF cs_output-header_text CS 'รอโอน'
+     OR cs_output-header_text CS 'รอปล่อย'.
     lv_wait = 'X'.
   ENDIF.
 
