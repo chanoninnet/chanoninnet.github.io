@@ -793,10 +793,10 @@ FORM set_flag_color CHANGING cs_output TYPE ty_output.
     lv_blank = 'X'.
   ENDIF.
 
-* Header text 'waiting' (รอโอน = waiting for transfer, รอปล่อย = waiting for release)
+* Header text 'waiting' - exact match on the condensed text
+* (รอโอน = waiting for transfer, รอปล่อย = waiting for release)
   lv_wait = space.
-  IF cs_output-header_text CS 'รอโอน'
-     OR cs_output-header_text CS 'รอปล่อย'.
+  IF lv_htxt = 'รอโอน' OR lv_htxt = 'รอปล่อย'.
     lv_wait = 'X'.
   ENDIF.
 
