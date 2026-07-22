@@ -776,6 +776,8 @@ ENDFORM.                    "fill_row
 *&      Any other combination leaves the icon blank.
 *&      GBSTK = Overall status, LFSTK = Delivery status,
 *&      ABSTK = Rejection status, Blocked = SPSTG_TXT = 'Blocked'.
+*&      HeaderText = Form Header Text (TEXT_Z020), matched by equality
+*&      on the condensed text.
 *&---------------------------------------------------------------------*
 FORM set_flag_color CHANGING cs_output TYPE ty_output.
 
@@ -785,15 +787,15 @@ FORM set_flag_color CHANGING cs_output TYPE ty_output.
 
   CLEAR cs_output-flag.
 
-* Header text: 'space or .' counts as no text (blank)
-  lv_htxt = cs_output-header_text.
+* Form Header Text = TEXT_Z020; 'space or .' counts as no text (blank)
+  lv_htxt = cs_output-text_z020.
   CONDENSE lv_htxt.
   lv_blank = space.
   IF lv_htxt IS INITIAL OR lv_htxt = '.'.
     lv_blank = 'X'.
   ENDIF.
 
-* Header text 'waiting' - exact match on the condensed text
+* Form Header Text 'waiting' - exact match on the condensed TEXT_Z020
 * (รอโอน = waiting for transfer, รอปล่อย = waiting for release)
   lv_wait = space.
   IF lv_htxt = 'รอโอน' OR lv_htxt = 'รอปล่อย'.
