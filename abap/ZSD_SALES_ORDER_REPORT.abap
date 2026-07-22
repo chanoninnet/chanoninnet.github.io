@@ -741,6 +741,8 @@ FORM fill_row USING is_vbak TYPE vbak
      OR is_vbuk-fsstk IS NOT INITIAL.
     gs_output-spstg     = 'B'.
     gs_output-spstg_txt = 'Blocked'.
+  ELSE.
+    gs_output-spstg_txt = 'Notblock'.
   ENDIF.
 
 * Long texts
