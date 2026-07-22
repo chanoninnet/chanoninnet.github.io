@@ -760,39 +760,61 @@ ENDFORM.                    "fill_row
 *&---------------------------------------------------------------------*
 *&      Form  SET_FLAG_COLOR
 *&---------------------------------------------------------------------*
-*&      Set the first column (FLAG) traffic-light icon from the Overall
-*&      Blocked Status (SPSTG_TXT) and the header long text (HEADER_TEXT):
-*&        - not Blocked & header text blank             -> Green light
-*&        - not Blocked & header text 'รอโอน'/'รอปล่อย'   -> Yellow light
-*&        - Blocked     & header text blank/รอโอน/รอปล่อย -> Red light
+*&      Set the first column (FLAG) traffic-light icon from the overall
+*&      statuses and the header long text:
+*&
+*&      GBSTK LFSTK ABSTK Blocked HeaderText          Light
+*&      ----- ----- ----- ------- ------------------- ------------
+*&        B     A     A   Notblk  space / '.'         Green
+*&        B     A     A   Notblk  'รอโอน'              Yellow
+*&        *     *     *   Blocked *                   Red
+*&        C     *     C   *       *                   (blank)
+*&        C     C     A   *       *                   (blank)
+*&
 *&      Any other combination leaves the icon blank.
+*&      GBSTK = Overall status, LFSTK = Delivery status,
+*&      ABSTK = Rejection status, Blocked = SPSTG_TXT = 'Blocked'.
 *&---------------------------------------------------------------------*
 FORM set_flag_color CHANGING cs_output TYPE ty_output.
 
-  DATA: lv_wait TYPE flag.
+  DATA: lv_htxt  TYPE string,
+        lv_blank TYPE flag,
+        lv_wait  TYPE flag.
 
   CLEAR cs_output-flag.
 
-* Header-text state: 'waiting' if it contains รอโอน or รอปล่อย
+* Header text: 'space or .' counts as no text (blank)
+  lv_htxt = cs_output-header_text.
+  CONDENSE lv_htxt.
+  lv_blank = space.
+  IF lv_htxt IS INITIAL OR lv_htxt = '.'.
+    lv_blank = 'X'.
+  ENDIF.
+
+* Header text 'waiting for transfer' (รอโอน)
   lv_wait = space.
-  IF cs_output-header_text CS 'รอโอน'
-     OR cs_output-header_text CS 'รอปล่อย'.
+  IF cs_output-header_text CS 'รอโอน'.
     lv_wait = 'X'.
   ENDIF.
 
-  IF cs_output-spstg_txt <> 'Blocked'.
-*   Not blocked
-    IF cs_output-header_text IS INITIAL.
-      cs_output-flag = icon_green_light.   " not blocked, no header text
+* 1) Overall blocked status = 'Blocked' -> Red (highest priority)
+  IF cs_output-spstg_txt = 'Blocked'.
+    cs_output-flag = icon_red_light.
+    RETURN.
+  ENDIF.
+
+* 2/3) Not blocked, Overall = B, Delivery = A, Rejection = A
+  IF cs_output-gbstk = 'B'
+     AND cs_output-lfstk = 'A'
+     AND cs_output-abstk = 'A'.
+    IF lv_blank = 'X'.
+      cs_output-flag = icon_green_light.   " no header text
     ELSEIF lv_wait = 'X'.
-      cs_output-flag = icon_yellow_light.  " not blocked, waiting text
-    ENDIF.
-  ELSE.
-*   Blocked
-    IF cs_output-header_text IS INITIAL OR lv_wait = 'X'.
-      cs_output-flag = icon_red_light.     " blocked
+      cs_output-flag = icon_yellow_light.  " รอโอน
     ENDIF.
   ENDIF.
+
+* Any other combination (e.g. C/*/C, C/C/A) leaves the icon blank.
 
 ENDFORM.                    "set_flag_color
 
