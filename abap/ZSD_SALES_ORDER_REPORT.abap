@@ -742,7 +742,7 @@ FORM fill_row USING is_vbak TYPE vbak
     gs_output-spstg     = 'B'.
     gs_output-spstg_txt = 'Blocked'.
   ELSE.
-    gs_output-spstg_txt = 'Notblock'.
+    gs_output-spstg_txt = 'Not blocked'.
   ENDIF.
 
 * Long texts
