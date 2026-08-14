@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sales by Customer Location — July 2026</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-id">
+    <h1>Sales by Customer Location</h1>
+    <p class="topbar-sub">QlikView export &middot; period <strong>July 2026</strong> &middot; offline basemap, no network required</p>
+  </div>
+  <button id="themeToggle" class="ghost-btn" type="button" aria-label="Switch colour theme">
+    <span data-theme-label>Dark</span>
+  </button>
+</header>
+
+<section class="kpis" aria-label="Headline figures">
+  <div class="kpi">
+    <p class="kpi-label">Total sales amount</p>
+    <p class="kpi-value" id="kpiTotal">&mdash;</p>
+    <p class="kpi-note" id="kpiTotalNote">&mdash;</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi-label">Plotted on map</p>
+    <p class="kpi-value" id="kpiMapped">&mdash;</p>
+    <p class="kpi-note" id="kpiMappedNote">&mdash;</p>
+  </div>
+  <div class="kpi">
+    <p class="kpi-label">Customers</p>
+    <p class="kpi-value" id="kpiCustomers">&mdash;</p>
+    <p class="kpi-note" id="kpiCustomersNote">&mdash;</p>
+  </div>
+  <div class="kpi kpi-warn">
+    <p class="kpi-label">No coordinates</p>
+    <p class="kpi-value" id="kpiUnmapped">&mdash;</p>
+    <p class="kpi-note" id="kpiUnmappedNote">&mdash;</p>
+  </div>
+</section>
+
+<section class="filters" aria-label="Filters">
+  <div class="filter-group" role="group" aria-label="Filter by region">
+    <span class="filter-caption">Region</span>
+    <div class="chips" id="regionChips"></div>
+  </div>
+  <div class="filter-group">
+    <label class="filter-caption" for="searchBox">Find customer</label>
+    <input id="searchBox" class="search" type="search" placeholder="Name, ID or province" autocomplete="off">
+  </div>
+  <button id="resetFilters" class="ghost-btn" type="button">Reset</button>
+</section>
+
+<main class="grid">
+
+  <section class="panel panel-map" aria-labelledby="mapTitle">
+    <div class="panel-head">
+      <div>
+        <h2 id="mapTitle">Sales amount by customer position</h2>
+        <p class="panel-sub">Pin area is proportional to sales amount; colour is the customer&rsquo;s region.</p>
+      </div>
+      <div class="map-tools">
+        <button class="icon-btn" id="zoomIn" type="button" aria-label="Zoom in">+</button>
+        <button class="icon-btn" id="zoomOut" type="button" aria-label="Zoom out">&minus;</button>
+        <button class="ghost-btn" id="zoomReset" type="button">Fit</button>
+      </div>
+    </div>
+
+    <div class="map-stage" id="mapStage">
+      <canvas id="map" role="img" aria-label="Map of Thailand with one pin per customer, sized by sales amount and coloured by region"></canvas>
+      <div class="map-tip" id="mapTip" hidden></div>
+      <div class="map-scale" id="mapScale"><span class="map-scale-bar"></span><span id="mapScaleLabel">&mdash;</span></div>
+      <div class="size-legend" aria-hidden="true">
+        <span class="size-legend-title">Sales amount</span>
+        <svg id="sizeLegend" width="150" height="80"></svg>
+      </div>
+    </div>
+
+    <div class="legend" id="regionLegend" aria-label="Region colour key"></div>
+  </section>
+
+  <div class="col-right">
+  <section class="panel panel-bars" aria-labelledby="barsTitle">
+    <div class="panel-head">
+      <div>
+        <h2 id="barsTitle">Sales amount by region</h2>
+        <p class="panel-sub" id="barsSub">Total across all customers in the period.</p>
+      </div>
+    </div>
+    <svg id="barChart" class="bar-chart" role="img" aria-labelledby="barsTitle"></svg>
+    <div class="bar-foot" id="barFoot"></div>
+  </section>
+
+  <section class="panel panel-prov" aria-labelledby="provTitle">
+    <div class="panel-head">
+      <div>
+        <h2 id="provTitle">Top provinces</h2>
+        <p class="panel-sub" id="provSub">Plotted customers only, coloured by the province&rsquo;s region.</p>
+      </div>
+    </div>
+    <svg id="provChart" class="bar-chart" role="img" aria-labelledby="provTitle"></svg>
+    <div class="bar-foot" id="provFoot"></div>
+  </section>
+  </div>
+
+  <section class="panel panel-table" aria-labelledby="tableTitle">
+    <div class="panel-head">
+      <div>
+        <h2 id="tableTitle">Customer detail</h2>
+        <p class="panel-sub" id="tableSub">&mdash;</p>
+      </div>
+      <div class="table-tools">
+        <label class="check">
+          <input type="checkbox" id="includeUnmapped" checked>
+          <span>Include customers with no coordinates</span>
+        </label>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table" id="dataTable">
+        <thead>
+          <tr>
+            <th scope="col" data-sort="name">Customer</th>
+            <th scope="col" data-sort="prov">Province</th>
+            <th scope="col" data-sort="region">Region</th>
+            <th scope="col" data-sort="group">Sales group</th>
+            <th scope="col" class="num" data-sort="amt" aria-sort="descending">Sales amount</th>
+            <th scope="col" class="num" data-sort="qty">Qty</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="table-foot" id="tableFoot"></div>
+  </section>
+
+</main>
+
+<footer class="pagefoot">
+  <p>
+    Source: <code>Qlikview_Sales_by_Customer_Location_202607.xlsx</code>.
+    Province boundaries are bundled with the page and rendered locally &mdash; the
+    dashboard makes no network requests and works from a plain <code>file://</code> path.
+  </p>
+</footer>
+
+<script src="data/thailand.js"></script>
+<script src="data/sales.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
