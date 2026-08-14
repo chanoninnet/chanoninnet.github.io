@@ -17,9 +17,10 @@ The filename matters: it must start with
 `Qlikview_Sales_by_Customer_Location_` and end with the period: `2026` for a
 whole year, `202608` for a month. Anything else in this folder is ignored.
 
-A year file holds one row per customer with the year total and no month column,
-so it is a single period and cannot be broken down by month. Monthly files give
-one period each, and the **Period** dropdown switches between them.
+A file with a **month column** is split into one period per month on its own.
+Without one, the whole file is a single period named by the filename — the
+current year export holds one row per customer with a whole-year total, so it is
+one period. Either way the **Period** dropdown switches between what is loaded.
 
 To bake the data into the page so colleagues get it too, run the build script
 from the `sales-map` folder:

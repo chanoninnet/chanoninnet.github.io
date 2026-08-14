@@ -103,11 +103,24 @@ it. Excel `~$` lock files, files with any other name, and files with no year or
 month are skipped — the last of those is reported so a typo does not pass
 unnoticed.
 
-**A year export cannot be split into months.** Its sheet holds one row per
-customer with that customer's whole-year total and no month column, so
-*Full year 2026* is a single period. To compare months you need either one file
-per month (`..._202601.xlsx`, `..._202602.xlsx`, …) or a month column added to
-the export.
+### Month column
+
+Add a **month column** to the export and one file becomes one period per month
+automatically — the **Period** dropdown then lists every month in it, and
+*All periods* gives the year.
+
+The column may be called `Month`, `Period`, `YearMonth`, `YYYYMM`, `เดือน` or
+`งวด`, and may sit anywhere in the sheet. Its values can be a real date,
+`202601`, `2026-01`, `01/2026`, a bare `1`–`12`, or a month name in English or
+Thai (`Jan`, `January`, `ม.ค.`, `มกราคม`). Thai Buddhist years are converted, so
+`256901` reads as January 2026.
+
+Without a month column the whole file is one period, named by the filename —
+the current `..._2026.xlsx` export holds one row per customer with a whole-year
+total, so it is a single *Full year 2026*.
+
+If a whole-year period and that same year's months are both loaded, *All
+periods* counts only the months, so the year is not added on top of itself.
 
 ### Start it this way
 
@@ -126,17 +139,15 @@ because of a browser security rule rather than anything in this code:
 | Opened via | Loads on open, no click? |
 |---|---|
 | `start-dashboard.bat` / `.sh`, or GitHub Pages | **Yes, always.** `source/` is read every time the page opens. |
-| `file://` — Chrome or Edge | **Yes, after the folder has been granted once** — choose **Allow on every visit** in Chrome's permission prompt and the page reads `source/` on open from then on. If the grant lapses, the page waits quietly for **Re-Load Data** rather than prompting. |
-| `file://` — Firefox or Safari | No. Files are picked by hand; once loaded they are remembered and come back on open. |
+| `file://` — Chrome or Edge | **Yes, after the file has been chosen once.** **Choose File…** picks the workbook and the browser remembers it, so **Re-Load Data** re-reads the same file with no dialog and the page loads it on open. |
+| `file://` — Firefox or Safari | No. The file is picked each time; once loaded the data is remembered and comes back on open. |
 
 A `file://` page is forbidden from reading any path it was not explicitly
-handed, so the grant dialog is unavoidable there. Worse, **Chrome refuses that
-grant outright for folders it treats as sensitive** — the Desktop, Documents,
-Downloads and drive roots among them — with *"Can't open this folder because it
-contains system files"*. If that appears, either move the `sales-map` folder
-somewhere plainer (`C:\dashboards\sales-map`), or just use the launcher, which
-sidesteps folder permissions entirely. The dashboard falls back to the file
-picker so nothing is ever a dead end.
+handed, so choosing the file once is unavoidable there. It is a **file** picker
+rather than a folder picker on purpose: Chrome refuses folder access for
+anything it treats as sensitive — Desktop, Documents, Downloads, drive roots —
+with *"Can't open this folder because it contains system files"*, but a file
+the user points at directly is always allowed.
 
 On a server that does not list directory contents (GitHub Pages), the page
 cannot see what is in the folder, so it asks for the last 24 months by name.

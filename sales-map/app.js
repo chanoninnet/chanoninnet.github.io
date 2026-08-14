@@ -80,7 +80,19 @@
      relocated customer shows its latest details. */
   function combineAllPeriods() {
     var mapped = {}, unmapped = {};
+
+    // A whole-year period and that year's own months would double-count each
+    // other, so when both are loaded the months win — they are the finer grain.
+    var yearsWithMonths = {};
     PERIODS.forEach(function (p) {
+      if (/^\d{4}-\d{2}$/.test(p.period)) yearsWithMonths[p.period.slice(0, 4)] = true;
+    });
+    var parts = PERIODS.filter(function (p) {
+      return !(/^\d{4}$/.test(p.period) && yearsWithMonths[p.period]);
+    });
+    var dropped = PERIODS.length - parts.length;
+
+    parts.forEach(function (p) {
       p.customers.forEach(function (c) {
         var t = mapped[c.id];
         if (!t) { mapped[c.id] = t = copyRow(c); t.amt = 0; t.qty = 0; }
@@ -96,11 +108,13 @@
     });
     return {
       period: ALL_PERIODS,
-      label: PERIODS.length
-        ? "All periods (" + PERIODS[0].label + " – " + PERIODS[PERIODS.length - 1].label + ")"
+      label: parts.length
+        ? "All periods (" + parts[0].label + " – " + parts[parts.length - 1].label + ")"
         : "All periods",
       shortLabel: "All periods",
-      source: PERIODS.length + " exports",
+      source: parts.length + " periods",
+      parts: parts.length,
+      dropped: dropped,
       customers: Object.keys(mapped).map(function (k) { return mapped[k]; }),
       unmapped: Object.keys(unmapped).map(function (k) { return unmapped[k]; })
     };
@@ -420,7 +434,7 @@
       "<dt>Region</dt><dd><span class=\"tip-region\">" + escapeHtml(c.region) + "</span></dd>" +
       "<dt>Group</dt><dd>" + (c.group ? escapeHtml(c.group) : "—") + "</dd>" +
       (state.period === ALL_PERIODS
-        ? "<dt>Periods</dt><dd>" + c.periods + " of " + PERIODS.length + "</dd>" : "") +
+        ? "<dt>Periods</dt><dd>" + c.periods + " of " + (CUR.parts || PERIODS.length) + "</dd>" : "") +
       "<dt>ID</dt><dd>" + c.id + "</dd>" +
       "</dl>";
 
@@ -963,9 +977,10 @@
     el("periodLabel").textContent = label;
     el("sourceName").textContent = CUR.source || "";
     if (label) document.title = "Sales by Customer Location — " + label;
-    el("barsSub").textContent = PERIODS.length > 1
-      ? "Total across all customers in " + (CUR.label || "the period") + "."
-      : "Total across all customers in " + (label || "the period") + ".";
+    var scope = PERIODS.length > 1 ? (CUR.label || "the period") : (label || "the period");
+    el("barsSub").textContent = "Total across all customers in " + scope + "." +
+      (CUR.dropped ? " The whole-year total is left out here, so its own months are" +
+        " not counted twice." : "");
     var sel = el("periodSelect");
     if (sel && sel.value !== state.period) sel.value = state.period;
   }
@@ -1051,9 +1066,11 @@
     for (var i = 0; i < files.length; i++) {
       try {
         var sheet = await window.XlsxReader.readFirstSheet(files[i]);
-        var period = window.SalesIngest.toPeriod(sheet, files[i].name);
-        period.loaded = true;
-        added.push(period);
+        // A sheet with a month column yields one period per month.
+        window.SalesIngest.toPeriods(sheet, files[i].name).forEach(function (period) {
+          period.loaded = true;
+          added.push(period);
+        });
       } catch (err) {
         failed.push(files[i].name + " — " + (err && err.message ? err.message : String(err)));
       }
@@ -1103,10 +1120,10 @@
   // no interaction at all; from a file:// page the folder has to be granted
   // once, because a browser will not let a script read an ungranted path.
   var SF = window.SourceFolder;
-  var folderHandle = null;
+  var fileHandles = null;
 
   function namePattern() {
-    return "<b>" + SF.dir + "/" + SF.prefix + "YYYYMM.xlsx</b>";
+    return "<b>" + SF.prefix + "YYYY.xlsx</b>";
   }
 
   function reportUndated(names) {
@@ -1137,170 +1154,90 @@
     await handleFiles(files, SF.dir);
   }
 
-  /** Read `source/` from a granted folder handle (file:// pages). */
-  async function reloadFromHandle(handle, interactive) {
-    if (!await SF.allowed(handle, interactive)) {
-      statusMessage("The browser would not re-open the <b>" + SF.dir +
-        "</b> folder. Click <b>Re-Load Data</b> again and allow access.", "error");
-      return false;
-    }
-    var found;
-    try {
-      found = await SF.readGranted(handle);
-    } catch (err) {
-      statusMessage("Could not read the <b>" + SF.dir + "</b> folder — " +
-        escapeHtml(err && err.message ? err.message : String(err)), "error");
-      return false;
-    }
-    if (!found.files.length) {
-      statusMessage("No exports in the <b>" + SF.dir + "</b> folder. Files must be " +
-        "named " + namePattern() + "." + reportUndated(found.undated), "warn");
-      return false;
-    }
-    await handleFiles(found.files, SF.dir, reportUndated(found.undated));
-    return true;
-  }
-
   async function reloadData() {
     if (SF.overHttp) { await reloadOverHttp(false); return; }
-
-    if (!SF.canGrant) {                               // Firefox / Safari on file://
-      statusMessage("This browser cannot re-read a folder from a <code>file://</code> " +
-        "page. Pick the exports by hand, or open the dashboard through a web " +
-        "server to load " + namePattern() + " automatically.", "info");
-      el("fileInput").click();
-      return;
-    }
-
-    if (folderHandle && await reloadFromHandle(folderHandle, true)) return;
-    if (folderHandle) return;                         // a real failure, already reported
-
-    statusMessage("Opened from a <code>file://</code> path, so the browser needs " +
-      "the <b>" + SF.dir + "</b> folder granted once — choose it (or the " +
-      "<b>sales-map</b> folder) in the dialog. After that every click re-loads " +
-      "silently.\n" + serveHint(), "info");
-    await grantFolder();
+    // A workbook already chosen re-reads silently; otherwise ask which one.
+    if (fileHandles && await loadFromHandles(fileHandles, true)) return;
+    if (!fileHandles) await chooseFile();
   }
 
   function serveHint() {
-    return "For loading with nothing to click, run <b>start-dashboard.bat</b> " +
+    return "For loading with nothing to choose, run <b>start-dashboard.bat</b> " +
       "(Windows) or <b>start-dashboard.sh</b> (Mac/Linux) from the sales-map " +
       "folder — served that way the page reads <b>" + SF.dir +
-      "/</b> by itself and no folder access is needed.";
+      "/</b> by itself.";
   }
 
-  async function grantFolder() {
-    var handle;
+  /** Open the file picker and load whatever is chosen. */
+  async function chooseFile() {
+    if (!SF.canPick) { el("fileInput").click(); return; }   // Firefox / Safari
+
+    var handles;
     try {
-      handle = await SF.grant();
+      handles = await SF.pickFiles();
     } catch (err) {
-      var kind = err && err.name;
-      if (kind === "AbortError") {
-        statusMessage("Nothing loaded — the <b>" + SF.dir +
-          "</b> folder was not granted. Looking for " + namePattern() + ".\n" +
-          serveHint(), "info");
-        return;
+      if (err && err.name === "AbortError") {
+        statusMessage("Nothing chosen. Pick <b>" + escapeHtml(SF.suggested) +
+          "</b> — or any " + namePattern() + ".\n" + serveHint(), "info");
+      } else {
+        // Should not happen for a file the user pointed at, but never dead-end.
+        statusMessage("The file picker could not open — " +
+          escapeHtml(err && err.message ? err.message : String(err)) +
+          "\nFalling back to the basic picker.", "warn");
+        el("fileInput").click();
       }
-      if (kind === "WrongFolder") {
-        statusMessage(escapeHtml(err.message), "error");
-        return;
-      }
-      // Chrome refuses folder access to a file:// page for anything it treats
-      // as sensitive — "this folder contains system files". Nothing the page
-      // can do about it, so hand over to the file picker instead of stopping.
-      statusMessage("The browser would not open that folder from a " +
-        "<code>file://</code> page. It refuses folders it treats as sensitive — " +
-        "the Desktop, Documents, Downloads or a drive root among them.\n" +
-        serveHint() + "\nOpening the file picker so the exports can be chosen " +
-        "by hand in the meantime.", "warn");
-      el("fileInput").click();
       return;
     }
-    folderHandle = handle;
-    await SF.remember(handle);
-    await reloadFromHandle(handle, true);
+    if (!handles || !handles.length) return;
+
+    fileHandles = handles;
+    await SF.remember(handles);
+    await loadFromHandles(handles, true);
+  }
+
+  /** Re-read the remembered workbook(s) — no dialog once one has been chosen. */
+  async function loadFromHandles(handles, interactive) {
+    var files;
+    try {
+      files = await SF.readRemembered(handles, interactive);
+    } catch (err) {
+      statusMessage("Could not re-read the chosen file — " +
+        escapeHtml(err && err.message ? err.message : String(err)) +
+        "\nIt may have been moved or renamed; choose it again.", "error");
+      return false;
+    }
+    if (!files) {
+      if (interactive) {
+        statusMessage("The browser would not re-open the chosen file. " +
+          "Choose it again with <b>Choose File…</b>", "error");
+      }
+      return false;
+    }
+    await handleFiles(files, files.length === 1 ? files[0].name : files.length + " files");
+    return true;
   }
 
   el("loadBtn").addEventListener("click", function () { reloadData(); });
+  el("chooseBtn").addEventListener("click", function () { chooseFile(); });
 
   el("fileInput").addEventListener("change", function (e) {
     handleFiles(e.target.files);
     e.target.value = "";                              // allow reloading the same file
   });
 
-  // Load on open, without anything to click.
+  // Load on open, without anything to choose.
   if (SF.overHttp) {
     // Served: the page can read `source/` on its own.
     reloadOverHttp(true);
-  } else if (SF.canGrant) {
-    SF.recall().then(async function (handle) {
-      folderHandle = handle || null;
-      if (!handle) return;
-      // From a file:// page this only works when the browser kept the earlier
-      // grant — Chrome does when "Allow on every visit" was chosen. Asking
-      // again would need a click; checking does not, so a lapsed grant simply
-      // waits quietly for Re-Load Data instead of prompting on open.
-      if (await SF.allowed(handle, false)) await reloadFromHandle(handle, false);
+  } else if (SF.canPick) {
+    SF.recall().then(async function (handles) {
+      if (!handles || !handles.length) return;
+      fileHandles = handles;
+      // Only when the browser kept permission on the chosen file — asking
+      // would need a click, and a prompt on page open is the wrong greeting.
+      if (await SF.readRemembered(handles, false)) await loadFromHandles(handles, false);
     });
   }
-
-  el("clearBtn").addEventListener("click", function () {
-    var kept = PERIODS.filter(function (p) { return !p.loaded; });
-    if (!kept.length) {
-      statusMessage("Nothing to fall back to — the page ships with no built-in " +
-        "period, so at least one loaded file has to stay.", "error");
-      return;
-    }
-    PERIODS = kept;
-    COMBINED = null;
-    try { window.localStorage.removeItem(STORE_KEY); } catch (e) { /* nothing to undo */ }
-    selectPeriod(PERIODS[PERIODS.length - 1].period);
-    state.selectedId = null;
-    renderPeriodSelect();
-    el("clearBtn").hidden = true;
-    fitView();
-    renderAll();
-    statusMessage("Cleared the periods loaded in the browser. Back to what the " +
-      "page was built with.", "info");
-  });
-
-  // Drag and drop anywhere on the page.
-  var dragDepth = 0;
-  function hasFiles(e) {
-    return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") >= 0;
-  }
-  window.addEventListener("dragenter", function (e) {
-    if (!hasFiles(e)) return;
-    e.preventDefault();
-    dragDepth++;
-    el("dropVeil").hidden = false;
-  });
-  window.addEventListener("dragover", function (e) { if (hasFiles(e)) e.preventDefault(); });
-  window.addEventListener("dragleave", function () {
-    if (--dragDepth <= 0) { dragDepth = 0; el("dropVeil").hidden = true; }
-  });
-  window.addEventListener("drop", function (e) {
-    if (!hasFiles(e)) return;
-    e.preventDefault();
-    dragDepth = 0;
-    el("dropVeil").hidden = true;
-    handleFiles(e.dataTransfer.files);
-  });
-
-  // Restore periods loaded in a previous visit.
-  (function restore() {
-    if (window.SourceFolder.overHttp) return;         // the folder is authoritative
-    var saved = storedPeriods();
-    if (!saved.length) return;
-    saved.forEach(function (p) { p.loaded = true; });
-    registerPeriods(saved);
-    el("clearBtn").hidden = false;
-    state.period = PERIODS[PERIODS.length - 1].period;
-    statusMessage("Restored " + saved.length + " period" + (saved.length > 1 ? "s" : "") +
-      " loaded earlier in this browser: <b>" +
-      escapeHtml(saved.map(function (p) { return p.label; }).join(", ")) +
-      "</b>", "info");
-  }());
 
   // Pick the period before anything reads CUR / TOTALS / MAX_AMOUNT.
   selectPeriod(state.period);

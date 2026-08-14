@@ -14,9 +14,9 @@
      directly; one that does not (GitHub Pages) is probed month by month.
 
    • Opened as a file:// page, a browser will not let a script read any path it
-     was not explicitly handed — no exception, no flag worth setting. There the
-     `source` folder has to be granted once through the File System Access API
-     (Chrome/Edge), after which the grant is remembered and re-reads are silent.
+     was not explicitly handed. There the workbook is chosen once through the
+     file picker; Chrome and Edge can remember that handle, so later re-loads
+     re-read the same file with no dialog.
    --------------------------------------------------------------------------- */
 window.SourceFolder = (function () {
   "use strict";
@@ -29,10 +29,9 @@ window.SourceFolder = (function () {
 
   var DB_NAME = "salesmap";
   var STORE = "handles";
-  var KEY = "sourceDir";
+  var KEY = "sourceFiles";
 
   var overHttp = location.protocol === "http:" || location.protocol === "https:";
-  var canGrant = typeof window.showDirectoryPicker === "function";
 
   /** A monthly export: right name, not an Excel lock file. */
   function isExport(name) {
@@ -120,7 +119,7 @@ window.SourceFolder = (function () {
   }
 
   // -------------------------------------------------------------------------
-  // opened as file://: a one-time grant of the `source` folder
+  // opened as file://: the user picks the workbook, and it is remembered
   // -------------------------------------------------------------------------
   function openDb() {
     return new Promise(function (resolve, reject) {
@@ -170,44 +169,45 @@ window.SourceFolder = (function () {
   }
 
   /**
-   * Ask for the `source` folder. The project folder is accepted too — its
-   * `source` subfolder is what gets kept, so either answer is right.
+   * Ask which workbook to read. Picking a file rather than a folder is what
+   * keeps this usable from a file:// page: Chrome refuses folder access for
+   * anything it treats as sensitive, but a file the user points at directly
+   * is always allowed.
    */
-  async function grant() {
-    var picked = await window.showDirectoryPicker({ id: "salesmap-source", mode: "read" });
-    if (/^source$/i.test(picked.name)) return picked;
-    try {
-      return await picked.getDirectoryHandle(DIR);
-    } catch (e) {
-      var wrong = new Error(
-        "“" + picked.name + "” is not the source folder and has no source " +
-        "folder inside it. Choose sales-map/source, or the sales-map folder itself."
-      );
-      wrong.name = "WrongFolder";
-      throw wrong;
-    }
+  function pickFiles() {
+    return window.showOpenFilePicker({
+      id: "salesmap-export",
+      multiple: true,
+      types: [{
+        description: "QlikView Sales by Customer Location export",
+        accept: {
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
+        }
+      }]
+    });
   }
 
-  /** Every export in a granted folder handle. */
-  async function readGranted(handle) {
-    var files = [], undated = [];
-    for await (var entry of handle.values()) {
-      if (entry.kind !== "file") continue;
-      if (isUndated(entry.name)) undated.push(entry.name);
-      else if (isExport(entry.name)) files.push(await entry.getFile());
+  /** Re-read remembered file handles; null if the browser will not re-open them. */
+  async function readRemembered(handles, interactive) {
+    var files = [];
+    for (var i = 0; i < handles.length; i++) {
+      if (!await allowed(handles[i], interactive)) return null;
+      files.push(await handles[i].getFile());
     }
-    return { files: sortByName(files), undated: undated };
+    return sortByName(files);
   }
 
   return {
     dir: DIR,
     prefix: PREFIX,
+    suggested: PREFIX + new Date().getFullYear() + ".xlsx",
     overHttp: overHttp,
-    canGrant: canGrant,
+    canPick: typeof window.showOpenFilePicker === "function",
     isExport: isExport,
+    isUndated: isUndated,
     fetchAll: fetchAll,
-    grant: grant,
-    readGranted: readGranted,
+    pickFiles: pickFiles,
+    readRemembered: readRemembered,
     allowed: allowed,
     remember: remember,
     recall: recall,
