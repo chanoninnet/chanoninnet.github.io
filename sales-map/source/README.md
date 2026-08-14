@@ -10,7 +10,12 @@ source/Qlikview_Sales_by_Customer_Location_202608.xlsx
 source/Qlikview_Sales_by_Customer_Location_202609.xlsx
 ```
 
-Then, from the `sales-map` folder, run:
+Then either click **Re-Load Data** on the dashboard and point it at this folder
+once — after that every click re-reads it, so a new month only needs the file
+dropped in here — or, to bake the months into the page for everyone, run the
+build script.
+
+From the `sales-map` folder:
 
 ```bash
 python3 tools/build_data.py

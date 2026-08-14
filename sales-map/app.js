@@ -1030,7 +1030,7 @@
     return PERIODS.filter(function (p) { return p.loaded; });
   }
 
-  async function handleFiles(fileList) {
+  async function handleFiles(fileList, fromFolder) {
     var files = Array.prototype.slice.call(fileList || []).filter(function (f) {
       return /\.xlsx$/i.test(f.name);
     });
@@ -1082,6 +1082,10 @@
         lines.push("Kept for this session only — " + why + ".");
       }
       el("clearBtn").hidden = false;
+      if (fromFolder) {
+        lines.unshift("Re-loaded " + added.length + " month" +
+          (added.length > 1 ? "s" : "") + " from <b>" + escapeHtml(fromFolder) + "</b>:");
+      }
     }
     failed.forEach(function (f) { lines.push("Could not read " + escapeHtml(f)); });
 
@@ -1089,11 +1093,89 @@
       failed.length ? (added.length ? "warn" : "error") : "ok");
   }
 
-  el("loadBtn").addEventListener("click", function () { el("fileInput").click(); });
+  // --- Re-Load Data ---------------------------------------------------------
+  // First click asks which folder the exports live in; the handle is kept, so
+  // every click after that just re-reads the folder with no dialog.
+  var folderHandle = null;
+
+  function canonicalHint() {
+    return "Looking for files named <b>Qlikview_Sales_by_Customer_Location_YYYYMM.xlsx</b>" +
+      " (the YYYYMM is the month).";
+  }
+
+  async function loadFromFolder(handle, interactive) {
+    if (!await window.SourceFolder.allowed(handle, interactive)) {
+      statusMessage("The browser would not grant access to that folder. " +
+        "Click <b>Re-Load Data</b> and allow it, or choose the folder again.", "error");
+      return false;
+    }
+
+    var files;
+    try {
+      files = await window.SourceFolder.scan(handle);
+    } catch (err) {
+      statusMessage("Could not read that folder — " +
+        escapeHtml(err && err.message ? err.message : String(err)), "error");
+      return false;
+    }
+
+    if (!files.length) {
+      statusMessage("No monthly exports in <b>" + escapeHtml(handle.name) + "</b>. " +
+        canonicalHint(), "warn");
+      return false;
+    }
+    await handleFiles(files, handle.name);
+    return true;
+  }
+
+  async function reloadData() {
+    if (!window.SourceFolder.supported) {
+      el("fileInput").click();                        // Firefox / Safari
+      return;
+    }
+    if (folderHandle) { await loadFromFolder(folderHandle, true); return; }
+
+    statusMessage("Choose the folder holding the monthly exports — the " +
+      "<b>sales-map</b> folder or its <b>source</b> folder. It is remembered, so " +
+      "later clicks re-load without asking.", "info");
+    await chooseFolder();
+  }
+
+  async function chooseFolder() {
+    var handle;
+    try {
+      handle = await window.SourceFolder.choose();
+    } catch (err) {
+      if (err && err.name === "AbortError") {
+        statusMessage("No folder chosen. " + canonicalHint(), "info");
+      } else {
+        statusMessage("Could not open the folder picker — " +
+          escapeHtml(err && err.message ? err.message : String(err)), "error");
+      }
+      return;
+    }
+    folderHandle = handle;
+    await window.SourceFolder.remember(handle);
+    el("folderBtn").hidden = false;
+    await loadFromFolder(handle, true);
+  }
+
+  el("loadBtn").addEventListener("click", function () { reloadData(); });
+  el("folderBtn").addEventListener("click", function () { chooseFolder(); });
+
   el("fileInput").addEventListener("change", function (e) {
     handleFiles(e.target.files);
     e.target.value = "";                              // allow reloading the same file
   });
+
+  // Pick the remembered folder back up, without prompting on page load.
+  if (window.SourceFolder.supported) {
+    window.SourceFolder.recall().then(function (handle) {
+      if (!handle) return;
+      folderHandle = handle;
+      el("folderBtn").hidden = false;
+    });
+  }
 
   el("clearBtn").addEventListener("click", function () {
     var kept = PERIODS.filter(function (p) { return !p.loaded; });

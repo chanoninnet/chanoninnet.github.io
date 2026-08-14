@@ -65,6 +65,7 @@ app.css                 theme tokens (light + dark) and layout
 app.js                  canvas map, charts, filters, table, Excel loading
 xlsx.js                 minimal in-browser .xlsx reader (no libraries)
 ingest.js               sheet -> customers + regions, the browser twin of the script
+folder.js               remembers the export folder so Re-Load Data needs no dialog
 source/                 >>> put the monthly .xlsx export here <<<
 data/thailand.js        simplified province polygons  (~142 KB)
 data/sales.js           522 customers, region-assigned (~79 KB)
@@ -77,24 +78,46 @@ instead.
 
 ## Loading a month: two ways
 
-**The quick way — the Load Excel button.** Click **Load Excel…** in the top
-right (or drag the file anywhere onto the page) and pick a QlikView `.xlsx`.
-The page reads it, assigns regions, and switches to that month straight away.
-No Python, no command line, no rebuild.
+**The quick way — the Re-Load Data button.**
 
-- Several files can be picked at once.
+Put the exports in `source/` (or any folder), named as QlikView names them:
+
+```
+Qlikview_Sales_by_Customer_Location_202607.xlsx
+Qlikview_Sales_by_Customer_Location_202608.xlsx
+```
+
+Click **Re-Load Data** in the top right. The *first* click asks which folder to
+watch — pick the `sales-map` folder or its `source` folder. **Every click after
+that re-reads the whole folder with no dialog at all**, so adding next month is:
+drop the file in, click the button.
+
+- It loads every `.xlsx` in the folder whose name carries a `YYYYMM`, each
+  becoming one entry in the **Period** dropdown. A month already present is
+  replaced with the newer file, so re-loading after a corrected export just
+  updates it. Excel's `~$` lock files and everything else are ignored.
+- If you pick the `sales-map` folder, its `source` subfolder is scanned too.
+- **Change folder** points it somewhere else; **Clear loaded** discards the
+  loaded months and returns to what the page was built with.
 - Loaded months are remembered in the browser and come back next time you open
-  the page. **Clear loaded** removes them again.
-- They live in *your browser only*. Sending the folder to a colleague sends the
-  months built by the script, not the ones you loaded — for that, use the
-  script way below.
-- The reader is built from browser APIs (`DecompressionStream` + `DOMParser`),
-  so it still needs no libraries and no network. On a browser too old to
-  support it, the button explains that and the script route still works.
-- Province assignment here uses the simplified boundaries the page draws
-  (~450 m), so a customer within a few hundred metres of a provincial border
-  can fall on the other side of it compared with the script. Everything else
-  matches exactly.
+  the page, so it opens with data before you click anything.
+- Files can also still be dragged onto the page, or picked individually.
+
+Two limits worth knowing:
+
+- **Remembering the folder needs Chrome or Edge** (the File System Access API).
+  Firefox and Safari have no way to let a page re-read a folder, so there
+  **Re-Load Data** falls back to the ordinary file picker — you choose the files
+  each time. Everything else behaves the same.
+- Months loaded this way live in *your browser only*. Sending the folder to a
+  colleague sends the months built by the script, not the ones you loaded — for
+  that, use the script below.
+
+The reader is built from browser APIs (`DecompressionStream` + `DOMParser`), so
+it still needs no libraries and no network. Province assignment uses the
+simplified boundaries the page draws (~450 m), so a customer within a few
+hundred metres of a provincial border can fall on the other side of it compared
+with the script; everything else matches exactly.
 
 **The permanent way — the build script.** Use this for months that should ship
 with the dashboard for everyone.
