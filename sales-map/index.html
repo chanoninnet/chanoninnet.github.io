@@ -11,7 +11,7 @@
 <header class="topbar">
   <div class="topbar-id">
     <h1>Sales by Customer Location</h1>
-    <p class="topbar-sub">QlikView export &middot; period <strong>July 2026</strong> &middot; offline basemap, no network required</p>
+    <p class="topbar-sub">QlikView export &middot; period <strong id="periodLabel">&mdash;</strong> &middot; offline basemap, no network required</p>
   </div>
   <button id="themeToggle" class="ghost-btn" type="button" aria-label="Switch colour theme">
     <span data-theme-label>Dark</span>
@@ -140,7 +140,7 @@
 
 <footer class="pagefoot">
   <p>
-    Source: <code>Qlikview_Sales_by_Customer_Location_202607.xlsx</code>.
+    Source: <code id="sourceName">&mdash;</code>.
     Province boundaries are bundled with the page and rendered locally &mdash; the
     dashboard makes no network requests and works from a plain <code>file://</code> path.
   </p>

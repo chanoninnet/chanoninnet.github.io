@@ -9,7 +9,15 @@ They are emitted as .js (not .json) on purpose: the dashboard has to open from a
 bare file:// path with no server, and fetch() of a local JSON file is blocked
 there by the browser's origin rules.
 
-    python3 tools/build_data.py <sales.xlsx> <provinces.geojson>
+Monthly refresh — drop the new export in sales-map/source/ and run:
+
+    python3 tools/build_data.py
+
+With no arguments it picks the newest YYYYMM export in source/ and reads the
+boundaries bundled alongside this script, so nothing has to be edited by hand.
+Both can still be overridden:
+
+    python3 tools/build_data.py <sales.xlsx> [provinces.geojson]
 """
 import json
 import re
@@ -19,7 +27,40 @@ from pathlib import Path
 
 import openpyxl
 
-OUT = Path(__file__).resolve().parent.parent / "data"
+ROOT = Path(__file__).resolve().parent.parent
+OUT = ROOT / "data"
+SOURCE_DIR = ROOT / "source"
+DEFAULT_GEOJSON = Path(__file__).resolve().parent / "thailand.geojson"
+
+MONTHS = ["January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December"]
+
+
+def newest_export():
+    """The highest-numbered YYYYMM export sitting in source/."""
+    found = []
+    for path in SOURCE_DIR.glob("*.xlsx"):
+        if path.name.startswith("~$"):               # Excel lock file
+            continue
+        match = re.search(r"(20\d{2})(0[1-9]|1[0-2])", path.name)
+        found.append((match.group(0) if match else "", path))
+    if not found:
+        sys.exit(
+            "No .xlsx found in " + str(SOURCE_DIR) + "\n"
+            "Put the monthly QlikView export there, for example\n"
+            "  source/Qlikview_Sales_by_Customer_Location_202608.xlsx"
+        )
+    found.sort(key=lambda pair: (pair[0], pair[1].name))
+    return found[-1][1]
+
+
+def period_from_name(name):
+    """('2026-07', 'July 2026') parsed out of the filename's YYYYMM stamp."""
+    match = re.search(r"(20\d{2})(0[1-9]|1[0-2])", name)
+    if not match:
+        return "", ""
+    year, month = match.group(1), int(match.group(2))
+    return year + "-" + match.group(2), MONTHS[month - 1] + " " + year
 
 # Thailand's official four-region grouping (National Statistical Office). The
 # four-region scheme is what the dashboard colours by: a bubble map is an
@@ -185,6 +226,16 @@ def js_dump(path, var, payload):
 
 # --------------------------------------------------------------------------
 def main(xlsx_path, geojson_path):
+    xlsx_path = Path(xlsx_path)
+    period, period_label = period_from_name(xlsx_path.name)
+    if not period:
+        sys.exit(
+            "Cannot read a YYYYMM period from '" + xlsx_path.name + "'.\n"
+            "Keep the QlikView filename, e.g. "
+            "Qlikview_Sales_by_Customer_Location_202608.xlsx"
+        )
+    print("export : " + xlsx_path.name + "  ->  " + period_label)
+
     geo = json.loads(Path(geojson_path).read_text(encoding="utf-8"))
 
     provinces = []
@@ -262,8 +313,9 @@ def main(xlsx_path, geojson_path):
     })
 
     data_bytes = js_dump(OUT / "sales.js", "SALES_DATA", {
-        "period": "2026-07",
-        "source": "Qlikview_Sales_by_Customer_Location_202607.xlsx",
+        "period": period,
+        "periodLabel": period_label,
+        "source": xlsx_path.name,
         "regionOrder": REGION_ORDER,
         "regionTh": REGION_TH,
         "provinceTh": PROVINCE_TH,
@@ -297,4 +349,8 @@ def nearest_province(x, y, provinces):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    xlsx = Path(sys.argv[1]) if len(sys.argv) > 1 else newest_export()
+    geojson = Path(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_GEOJSON
+    if not geojson.exists():
+        sys.exit("Province boundaries missing: " + str(geojson))
+    main(xlsx, geojson)

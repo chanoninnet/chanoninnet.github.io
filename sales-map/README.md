@@ -60,28 +60,62 @@ Two customers carry a negative sales amount (−฿9,768 and −฿323.70).
 ## Files
 
 ```
-index.html            markup
-app.css               theme tokens (light + dark) and layout
-app.js                canvas map, charts, filters, table
-data/thailand.js      simplified province polygons  (~142 KB)
-data/sales.js         522 customers, region-assigned (~79 KB)
-tools/build_data.py   regenerates both data files from the .xlsx
+index.html              markup
+app.css                 theme tokens (light + dark) and layout
+app.js                  canvas map, charts, filters, table
+source/                 >>> put the monthly .xlsx export here <<<
+data/thailand.js        simplified province polygons  (~142 KB)
+data/sales.js           522 customers, region-assigned (~79 KB)
+tools/build_data.py     regenerates both data files from the .xlsx
+tools/thailand.geojson  full-resolution province boundaries (build input)
 ```
 
-## Rebuilding the data
+`data/` is generated — never edit those two files by hand; re-run the script
+instead.
 
-After a new monthly export, drop it in and re-run:
+## Monthly refresh — where the Excel file goes
+
+Put the new QlikView export in **`source/`**, keeping the filename QlikView
+gives it, then run the script with no arguments:
 
 ```bash
-pip install openpyxl
-python3 tools/build_data.py path/to/Qlikview_Sales_by_Customer_Location_YYYYMM.xlsx path/to/thailand.geojson
+pip install openpyxl                 # once
+cd sales-map
+python3 tools/build_data.py
 ```
 
-The script re-reads the sheet, re-assigns every customer to a province and
-region, re-simplifies the boundaries, and rewrites `data/thailand.js` and
-`data/sales.js`. It prints a per-region summary so the totals can be checked
-against QlikView. Update the `period` string in the script and the heading in
-`index.html` for the new month.
+```
+sales-map/source/Qlikview_Sales_by_Customer_Location_202608.xlsx   ← drop it here
+```
+
+That is the whole procedure. The script picks the file with the highest `YYYYMM`
+in `source/`, works the period out of that filename, re-reads the sheet,
+re-assigns every customer to a province and region, and rewrites
+`data/sales.js` and `data/thailand.js`. **Nothing in the code or the HTML needs
+editing for a new month** — the heading, the page title and the chart subtitle
+all follow the data.
+
+Old exports can stay in `source/`; the script always takes the newest, so there
+is nothing to clean up. It prints a per-region summary on every run so the
+totals can be reconciled against QlikView:
+
+```
+export : Qlikview_Sales_by_Customer_Location_202607.xlsx  ->  July 2026
+customers mapped : 443
+customers unmapped: 79
+total sales      : 330,695,503.82
+  North        68 customers        9,198,044.00
+  ...
+```
+
+The sheet must keep its current columns (`Store_ID`, `Store_Name`, `Lat`, `Lng`,
+`SalesGroup`, `SalesAmt`, `SalesQty`) — see `source/README.md`.
+
+To rebuild from a file kept somewhere else, pass it explicitly:
+
+```bash
+python3 tools/build_data.py /path/to/export.xlsx
+```
 
 Province boundaries come from the public
 [`apisit/thailand.json`](https://github.com/apisit/thailand.json) dataset,

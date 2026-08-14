@@ -854,6 +854,13 @@
   new ResizeObserver(function () { resize(); renderBars(); renderProvinces(); }).observe(stage);
   window.addEventListener("resize", function () { renderBars(); renderProvinces(); });
 
+  // The period comes from the export's filename, so a new month needs no edits.
+  var periodLabel = DATA.periodLabel || DATA.period || "";
+  el("periodLabel").textContent = periodLabel;
+  el("sourceName").textContent = DATA.source || "";
+  if (periodLabel) document.title = "Sales by Customer Location — " + periodLabel;
+  el("barsSub").textContent = "Total across all customers in " + (periodLabel || "the period") + ".";
+
   syncThemeLabel();
   resize();
   renderAll();
