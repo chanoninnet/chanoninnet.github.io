@@ -65,7 +65,7 @@ app.css                 theme tokens (light + dark) and layout
 app.js                  canvas map, charts, filters, table, Excel loading
 xlsx.js                 minimal in-browser .xlsx reader (no libraries)
 ingest.js               sheet -> customers + regions, the browser twin of the script
-folder.js               remembers the export folder so Re-Load Data needs no dialog
+folder.js               finds the exports in the fixed source/ folder
 source/                 >>> put the monthly .xlsx export here <<<
 data/thailand.js        simplified province polygons  (~142 KB)
 data/sales.js           522 customers, region-assigned (~79 KB)
@@ -78,44 +78,49 @@ instead.
 
 ## Loading a month: two ways
 
-**The quick way — the Re-Load Data button.**
+**The quick way — the `source` folder and the Re-Load Data button.**
 
-Put the exports in `source/` (or any folder), named as QlikView names them:
+The dashboard reads one fixed folder, `source/`, and one fixed filename shape:
 
 ```
-Qlikview_Sales_by_Customer_Location_202607.xlsx
-Qlikview_Sales_by_Customer_Location_202608.xlsx
+sales-map/source/Qlikview_Sales_by_Customer_Location_202607.xlsx
+sales-map/source/Qlikview_Sales_by_Customer_Location_202608.xlsx
 ```
 
-Click **Re-Load Data** in the top right. The *first* click asks which folder to
-watch — pick the `sales-map` folder or its `source` folder. **Every click after
-that re-reads the whole folder with no dialog at all**, so adding next month is:
-drop the file in, click the button.
+Each file becomes an entry in the **Period** dropdown. Loading a month that is
+already present replaces it, so re-loading after a corrected export just updates
+it. Excel `~$` lock files, files with any other name, and files with no `YYYYMM`
+are skipped — the last of those is reported so a typo does not pass unnoticed.
 
-- It loads every `.xlsx` in the folder whose name carries a `YYYYMM`, each
-  becoming one entry in the **Period** dropdown. A month already present is
-  replaced with the newer file, so re-loading after a corrected export just
-  updates it. Excel's `~$` lock files and everything else are ignored.
-- If you pick the `sales-map` folder, its `source` subfolder is scanned too.
-- **Change folder** points it somewhere else; **Clear loaded** discards the
-  loaded months and returns to what the page was built with.
-- Loaded months are remembered in the browser and come back next time you open
-  the page, so it opens with data before you click anything.
-- Files can also still be dragged onto the page, or picked individually.
+**How much clicking this takes depends on how the page is opened**, and the
+difference is a browser security rule, not a setting:
 
-Two limits worth knowing:
+| Opened via | What happens |
+|---|---|
+| A web server — GitHub Pages, or `python3 -m http.server` in `sales-map` | **Nothing to click.** The page reads `source/` itself on every open, and **Re-Load Data** re-reads it. |
+| `file://` — double-clicking `index.html`, Chrome or Edge | **Re-Load Data** asks for the `source` folder *once*; the grant is remembered, so every click after that re-loads silently. |
+| `file://` — Firefox or Safari | **Re-Load Data** opens the ordinary file picker; the files are chosen each time. |
 
-- **Remembering the folder needs Chrome or Edge** (the File System Access API).
-  Firefox and Safari have no way to let a page re-read a folder, so there
-  **Re-Load Data** falls back to the ordinary file picker — you choose the files
-  each time. Everything else behaves the same.
-- Months loaded this way live in *your browser only*. Sending the folder to a
-  colleague sends the months built by the script, not the ones you loaded — for
-  that, use the script below.
+A `file://` page is forbidden from reading any path it was not explicitly
+handed — that is why the one-time grant exists and why no amount of code can
+remove it. Serving the folder is what makes it fully automatic:
+
+```bash
+cd sales-map && python3 -m http.server 8000    # then open http://localhost:8000
+```
+
+On a server that does not list directory contents (GitHub Pages), the page
+cannot see what is in the folder, so it asks for the last 24 months by name.
+Older months belong in a build (below) rather than in the folder.
+
+Files can also still be dragged onto the page or picked by hand, and on
+`file://` the loaded months are remembered between visits. **Clear loaded**
+discards them and returns to what the page was built with. Months loaded this
+way live in your browser only — to send a month to a colleague, build it in.
 
 The reader is built from browser APIs (`DecompressionStream` + `DOMParser`), so
-it still needs no libraries and no network. Province assignment uses the
-simplified boundaries the page draws (~450 m), so a customer within a few
+it still needs no libraries and no third-party code. Province assignment uses
+the simplified boundaries the page draws (~450 m), so a customer within a few
 hundred metres of a provincial border can fall on the other side of it compared
 with the script; everything else matches exactly.
 

@@ -1,36 +1,121 @@
 /* ---------------------------------------------------------------------------
-   Remember the folder the monthly exports live in.
+   Find the monthly exports in the fixed `source` folder beside this page.
 
-   A page cannot go looking through the filesystem on its own, so the first
-   Re-Load Data click asks which folder to watch. The browser hands back a
-   directory handle, that handle is kept in IndexedDB, and every later click
-   re-reads the folder with no dialog at all — which is what makes "re-load"
-   a single click rather than a file-picking chore.
+   Files must be named the way QlikView names them:
 
-   Chrome and Edge support this (including on file:// pages, which count as
-   secure contexts). Firefox and Safari do not, and there `supported` is false
-   so the caller can fall back to the ordinary multi-file picker.
+       source/Qlikview_Sales_by_Customer_Location_YYYYMM.xlsx
+
+   How the folder is read depends on how the page was opened, because browsers
+   treat the two cases very differently:
+
+   • Served over http(s) — GitHub Pages, or `python3 -m http.server` — the page
+     can request `source/…` itself. Nothing is asked of the user and the months
+     load on their own. A server that renders a directory listing is read
+     directly; one that does not (GitHub Pages) is probed month by month.
+
+   • Opened as a file:// page, a browser will not let a script read any path it
+     was not explicitly handed — no exception, no flag worth setting. There the
+     `source` folder has to be granted once through the File System Access API
+     (Chrome/Edge), after which the grant is remembered and re-reads are silent.
    --------------------------------------------------------------------------- */
 window.SourceFolder = (function () {
   "use strict";
+
+  var DIR = "source";
+  var PREFIX = "Qlikview_Sales_by_Customer_Location_";
+  var NAME = /^Qlikview_Sales_by_Customer_Location_.*\.xlsx$/i;
+  var PERIOD = /(20\d{2})(0[1-9]|1[0-2])/;
 
   var DB_NAME = "salesmap";
   var STORE = "handles";
   var KEY = "sourceDir";
 
-  var supported = typeof window.showDirectoryPicker === "function";
+  var overHttp = location.protocol === "http:" || location.protocol === "https:";
+  var canGrant = typeof window.showDirectoryPicker === "function";
 
-  // Any .xlsx carrying a YYYYMM — which is exactly the QlikView export name,
-  // Qlikview_Sales_by_Customer_Location_YYYYMM.xlsx, without being so strict
-  // that a file renamed slightly by hand is silently ignored.
-  var EXPORT_NAME = /(20\d{2})(0[1-9]|1[0-2])/;
-
+  /** A monthly export: right name, not an Excel lock file. */
   function isExport(name) {
-    return /\.xlsx$/i.test(name) &&
-      name.slice(0, 2) !== "~$" &&                    // Excel lock file
-      EXPORT_NAME.test(name);
+    return NAME.test(name) && name.slice(0, 2) !== "~$";
   }
 
+  /** Named right but with no YYYYMM — worth telling the user about. */
+  function isUndated(name) {
+    return isExport(name) && !PERIOD.test(name.slice(PREFIX.length));
+  }
+
+  // -------------------------------------------------------------------------
+  // served over http(s): read `source/` directly
+  // -------------------------------------------------------------------------
+
+  /** Parse a server-rendered directory listing, if there is one. */
+  async function listFromIndex() {
+    var res;
+    try {
+      res = await fetch(DIR + "/", { cache: "no-store" });
+    } catch (e) {
+      return null;
+    }
+    if (!res.ok) return null;
+
+    var type = res.headers.get("content-type") || "";
+    if (type.indexOf("html") < 0) return null;
+
+    var doc = new DOMParser().parseFromString(await res.text(), "text/html");
+    var links = doc.querySelectorAll("a[href]");
+    var names = [];
+    for (var i = 0; i < links.length; i++) {
+      var href = links[i].getAttribute("href") || "";
+      var base = decodeURIComponent(href.split("?")[0].split("#")[0]).split("/").pop();
+      if (isExport(base) && names.indexOf(base) < 0) names.push(base);
+    }
+    return names.length ? names : null;
+  }
+
+  /** The months to try when the server will not list the folder. */
+  function candidateMonths(back) {
+    var now = new Date();
+    var out = [];
+    for (var i = -1; i < back; i++) {                 // one ahead, then backwards
+      var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      var mm = d.getMonth() + 1;
+      out.push(String(d.getFullYear()) + (mm < 10 ? "0" + mm : String(mm)));
+    }
+    return out;
+  }
+
+  function fetchExport(name) {
+    return fetch(DIR + "/" + name, { cache: "no-store" }).then(function (res) {
+      if (!res.ok) return null;
+      return res.blob().then(function (blob) { return new File([blob], name); });
+    }).catch(function () { return null; });
+  }
+
+  /** Every export in `source/`, fetched over http(s). */
+  async function fetchAll() {
+    var names = await listFromIndex();
+    if (names) {
+      var listed = await Promise.all(names.map(fetchExport));
+      var got = listed.filter(Boolean);
+      if (got.length) return sortByName(got);
+    }
+    // GitHub Pages and friends serve no listing, so there is nothing to read
+    // but the names themselves: ask for the last two years of months by name.
+    // Anything older than that belongs in a build, not in a probe.
+    var probed = await Promise.all(candidateMonths(24).map(function (stamp) {
+      return fetchExport(PREFIX + stamp + ".xlsx");
+    }));
+    return sortByName(probed.filter(Boolean));
+  }
+
+  function sortByName(files) {
+    return files.sort(function (a, b) {
+      return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // opened as file://: a one-time grant of the `source` folder
+  // -------------------------------------------------------------------------
   function openDb() {
     return new Promise(function (resolve, reject) {
       var request = indexedDB.open(DB_NAME, 1);
@@ -56,21 +141,20 @@ window.SourceFolder = (function () {
   }
 
   function remember(handle) {
-    return withStore("readwrite", function (store) { return store.put(handle, KEY); })
-      .catch(function () { /* a forgotten folder only costs one extra dialog */ });
+    return withStore("readwrite", function (s) { return s.put(handle, KEY); })
+      .catch(function () { /* a forgotten grant only costs one extra dialog */ });
   }
 
   function recall() {
-    return withStore("readonly", function (store) { return store.get(KEY); })
+    return withStore("readonly", function (s) { return s.get(KEY); })
       .catch(function () { return null; });
   }
 
   function forget() {
-    return withStore("readwrite", function (store) { return store.delete(KEY); })
+    return withStore("readwrite", function (s) { return s.delete(KEY); })
       .catch(function () { /* nothing to undo */ });
   }
 
-  /** Read permission for a remembered handle, re-prompting if it has lapsed. */
   async function allowed(handle, interactive) {
     if (!handle || typeof handle.queryPermission !== "function") return true;
     var opts = { mode: "read" };
@@ -80,33 +164,44 @@ window.SourceFolder = (function () {
   }
 
   /**
-   * Every monthly export in the folder, plus any in a `source` subfolder — so
-   * either the project folder or the source folder itself can be chosen.
+   * Ask for the `source` folder. The project folder is accepted too — its
+   * `source` subfolder is what gets kept, so either answer is right.
    */
-  async function scan(dir) {
-    var files = [];
-    for await (var entry of dir.values()) {
-      if (entry.kind === "file") {
-        if (isExport(entry.name)) files.push(await entry.getFile());
-      } else if (entry.kind === "directory" && /^source$/i.test(entry.name)) {
-        for await (var sub of entry.values()) {
-          if (sub.kind === "file" && isExport(sub.name)) files.push(await sub.getFile());
-        }
-      }
+  async function grant() {
+    var picked = await window.showDirectoryPicker({ id: "salesmap-source", mode: "read" });
+    if (/^source$/i.test(picked.name)) return picked;
+    try {
+      return await picked.getDirectoryHandle(DIR);
+    } catch (e) {
+      var wrong = new Error(
+        "“" + picked.name + "” is not the source folder and has no source " +
+        "folder inside it. Choose sales-map/source, or the sales-map folder itself."
+      );
+      wrong.name = "WrongFolder";
+      throw wrong;
     }
-    files.sort(function (a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; });
-    return files;
   }
 
-  function choose() {
-    return window.showDirectoryPicker({ id: "salesmap-source", mode: "read" });
+  /** Every export in a granted folder handle. */
+  async function readGranted(handle) {
+    var files = [], undated = [];
+    for await (var entry of handle.values()) {
+      if (entry.kind !== "file") continue;
+      if (isUndated(entry.name)) undated.push(entry.name);
+      else if (isExport(entry.name)) files.push(await entry.getFile());
+    }
+    return { files: sortByName(files), undated: undated };
   }
 
   return {
-    supported: supported,
+    dir: DIR,
+    prefix: PREFIX,
+    overHttp: overHttp,
+    canGrant: canGrant,
     isExport: isExport,
-    choose: choose,
-    scan: scan,
+    fetchAll: fetchAll,
+    grant: grant,
+    readGranted: readGranted,
     allowed: allowed,
     remember: remember,
     recall: recall,

@@ -993,6 +993,9 @@
 
   /** Persist loaded months. Returns null on success, or a reason string. */
   function persist(periods) {
+    // On a served page the `source` folder is re-read on every open, so a
+    // stored copy would only ever be a staler duplicate of it.
+    if (window.SourceFolder.overHttp) return null;
     try {
       window.localStorage.setItem(STORE_KEY, JSON.stringify(periods.map(function (p) {
         return {
@@ -1030,7 +1033,7 @@
     return PERIODS.filter(function (p) { return p.loaded; });
   }
 
-  async function handleFiles(fileList, fromFolder) {
+  async function handleFiles(fileList, fromFolder, extraNote) {
     var files = Array.prototype.slice.call(fileList || []).filter(function (f) {
       return /\.xlsx$/i.test(f.name);
     });
@@ -1089,92 +1092,126 @@
     }
     failed.forEach(function (f) { lines.push("Could not read " + escapeHtml(f)); });
 
-    statusMessage(lines.join("\n"),
-      failed.length ? (added.length ? "warn" : "error") : "ok");
+    statusMessage(lines.join("\n") + (extraNote || ""),
+      failed.length || extraNote ? (added.length ? "warn" : "error") : "ok");
   }
 
   // --- Re-Load Data ---------------------------------------------------------
-  // First click asks which folder the exports live in; the handle is kept, so
-  // every click after that just re-reads the folder with no dialog.
+  // Always the fixed `source` folder beside the page, always files named
+  // Qlikview_Sales_by_Customer_Location_*.xlsx. Served over http(s) that needs
+  // no interaction at all; from a file:// page the folder has to be granted
+  // once, because a browser will not let a script read an ungranted path.
+  var SF = window.SourceFolder;
   var folderHandle = null;
 
-  function canonicalHint() {
-    return "Looking for files named <b>Qlikview_Sales_by_Customer_Location_YYYYMM.xlsx</b>" +
-      " (the YYYYMM is the month).";
+  function namePattern() {
+    return "<b>" + SF.dir + "/" + SF.prefix + "YYYYMM.xlsx</b>";
   }
 
-  async function loadFromFolder(handle, interactive) {
-    if (!await window.SourceFolder.allowed(handle, interactive)) {
-      statusMessage("The browser would not grant access to that folder. " +
-        "Click <b>Re-Load Data</b> and allow it, or choose the folder again.", "error");
-      return false;
-    }
+  function reportUndated(names) {
+    if (!names || !names.length) return "";
+    return "\nSkipped (no YYYYMM month in the name): " + escapeHtml(names.join(", "));
+  }
 
+  /** Read `source/` over http(s) — no dialog, nothing to grant. */
+  async function reloadOverHttp(quiet) {
+    if (!quiet) statusMessage("Reading " + namePattern() + "…", "info");
     var files;
     try {
-      files = await window.SourceFolder.scan(handle);
+      files = await SF.fetchAll();
     } catch (err) {
-      statusMessage("Could not read that folder — " +
+      statusMessage("Could not read the <b>" + SF.dir + "</b> folder — " +
+        escapeHtml(err && err.message ? err.message : String(err)), "error");
+      return;
+    }
+    if (!files.length) {
+      if (!quiet) {
+        statusMessage("No exports found. Put them in the <b>" + SF.dir +
+          "</b> folder next to this page, named " + namePattern() + ".", "warn");
+      } else {
+        el("loadStatus").hidden = true;
+      }
+      return;
+    }
+    await handleFiles(files, SF.dir);
+  }
+
+  /** Read `source/` from a granted folder handle (file:// pages). */
+  async function reloadFromHandle(handle, interactive) {
+    if (!await SF.allowed(handle, interactive)) {
+      statusMessage("The browser would not re-open the <b>" + SF.dir +
+        "</b> folder. Click <b>Re-Load Data</b> again and allow access.", "error");
+      return false;
+    }
+    var found;
+    try {
+      found = await SF.readGranted(handle);
+    } catch (err) {
+      statusMessage("Could not read the <b>" + SF.dir + "</b> folder — " +
         escapeHtml(err && err.message ? err.message : String(err)), "error");
       return false;
     }
-
-    if (!files.length) {
-      statusMessage("No monthly exports in <b>" + escapeHtml(handle.name) + "</b>. " +
-        canonicalHint(), "warn");
+    if (!found.files.length) {
+      statusMessage("No exports in the <b>" + SF.dir + "</b> folder. Files must be " +
+        "named " + namePattern() + "." + reportUndated(found.undated), "warn");
       return false;
     }
-    await handleFiles(files, handle.name);
+    await handleFiles(found.files, SF.dir, reportUndated(found.undated));
     return true;
   }
 
   async function reloadData() {
-    if (!window.SourceFolder.supported) {
-      el("fileInput").click();                        // Firefox / Safari
+    if (SF.overHttp) { await reloadOverHttp(false); return; }
+
+    if (!SF.canGrant) {                               // Firefox / Safari on file://
+      statusMessage("This browser cannot re-read a folder from a <code>file://</code> " +
+        "page. Pick the exports by hand, or open the dashboard through a web " +
+        "server to load " + namePattern() + " automatically.", "info");
+      el("fileInput").click();
       return;
     }
-    if (folderHandle) { await loadFromFolder(folderHandle, true); return; }
 
-    statusMessage("Choose the folder holding the monthly exports — the " +
-      "<b>sales-map</b> folder or its <b>source</b> folder. It is remembered, so " +
-      "later clicks re-load without asking.", "info");
-    await chooseFolder();
+    if (folderHandle && await reloadFromHandle(folderHandle, true)) return;
+    if (folderHandle) return;                         // a real failure, already reported
+
+    statusMessage("Opened from a <code>file://</code> path, so the browser needs " +
+      "the <b>" + SF.dir + "</b> folder granted once — choose it (or the " +
+      "<b>sales-map</b> folder) in the dialog. After that every click re-loads " +
+      "silently.", "info");
+    await grantFolder();
   }
 
-  async function chooseFolder() {
+  async function grantFolder() {
     var handle;
     try {
-      handle = await window.SourceFolder.choose();
+      handle = await SF.grant();
     } catch (err) {
       if (err && err.name === "AbortError") {
-        statusMessage("No folder chosen. " + canonicalHint(), "info");
+        statusMessage("Nothing loaded — the <b>" + SF.dir +
+          "</b> folder was not granted. Looking for " + namePattern() + ".", "info");
       } else {
-        statusMessage("Could not open the folder picker — " +
-          escapeHtml(err && err.message ? err.message : String(err)), "error");
+        statusMessage(escapeHtml(err && err.message ? err.message : String(err)), "error");
       }
       return;
     }
     folderHandle = handle;
-    await window.SourceFolder.remember(handle);
-    el("folderBtn").hidden = false;
-    await loadFromFolder(handle, true);
+    await SF.remember(handle);
+    await reloadFromHandle(handle, true);
   }
 
   el("loadBtn").addEventListener("click", function () { reloadData(); });
-  el("folderBtn").addEventListener("click", function () { chooseFolder(); });
 
   el("fileInput").addEventListener("change", function (e) {
     handleFiles(e.target.files);
     e.target.value = "";                              // allow reloading the same file
   });
 
-  // Pick the remembered folder back up, without prompting on page load.
-  if (window.SourceFolder.supported) {
-    window.SourceFolder.recall().then(function (handle) {
-      if (!handle) return;
-      folderHandle = handle;
-      el("folderBtn").hidden = false;
-    });
+  // On a served page the exports load on their own; on file:// pick the
+  // remembered grant back up but never prompt without a click.
+  if (SF.overHttp) {
+    reloadOverHttp(true);
+  } else if (SF.canGrant) {
+    SF.recall().then(function (handle) { folderHandle = handle || null; });
   }
 
   el("clearBtn").addEventListener("click", function () {
@@ -1222,6 +1259,7 @@
 
   // Restore months loaded in a previous visit.
   (function restore() {
+    if (window.SourceFolder.overHttp) return;         // the folder is authoritative
     var saved = storedPeriods();
     if (!saved.length) return;
     saved.forEach(function (p) { p.loaded = true; });
