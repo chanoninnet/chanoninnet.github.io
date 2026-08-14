@@ -1177,8 +1177,15 @@
     statusMessage("Opened from a <code>file://</code> path, so the browser needs " +
       "the <b>" + SF.dir + "</b> folder granted once — choose it (or the " +
       "<b>sales-map</b> folder) in the dialog. After that every click re-loads " +
-      "silently.", "info");
+      "silently.\n" + serveHint(), "info");
     await grantFolder();
+  }
+
+  function serveHint() {
+    return "For loading with nothing to click, run <b>start-dashboard.bat</b> " +
+      "(Windows) or <b>start-dashboard.sh</b> (Mac/Linux) from the sales-map " +
+      "folder — served that way the page reads <b>" + SF.dir +
+      "/</b> by itself and no folder access is needed.";
   }
 
   async function grantFolder() {
@@ -1186,12 +1193,26 @@
     try {
       handle = await SF.grant();
     } catch (err) {
-      if (err && err.name === "AbortError") {
+      var kind = err && err.name;
+      if (kind === "AbortError") {
         statusMessage("Nothing loaded — the <b>" + SF.dir +
-          "</b> folder was not granted. Looking for " + namePattern() + ".", "info");
-      } else {
-        statusMessage(escapeHtml(err && err.message ? err.message : String(err)), "error");
+          "</b> folder was not granted. Looking for " + namePattern() + ".\n" +
+          serveHint(), "info");
+        return;
       }
+      if (kind === "WrongFolder") {
+        statusMessage(escapeHtml(err.message), "error");
+        return;
+      }
+      // Chrome refuses folder access to a file:// page for anything it treats
+      // as sensitive — "this folder contains system files". Nothing the page
+      // can do about it, so hand over to the file picker instead of stopping.
+      statusMessage("The browser would not open that folder from a " +
+        "<code>file://</code> page. It refuses folders it treats as sensitive — " +
+        "the Desktop, Documents, Downloads or a drive root among them.\n" +
+        serveHint() + "\nOpening the file picker so the exports can be chosen " +
+        "by hand in the meantime.", "warn");
+      el("fileInput").click();
       return;
     }
     folderHandle = handle;

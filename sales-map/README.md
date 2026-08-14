@@ -3,10 +3,14 @@
 An offline map + bar chart dashboard built from the QlikView export
 `Qlikview_Sales_by_Customer_Location_202607.xlsx` (period **July 2026**).
 
-Open `index.html` — that is the whole thing. It runs from a plain `file://`
-path with **no web server and no internet connection**: the basemap is a set of
+**Double-click `start-dashboard.bat`** (Windows) or run `./start-dashboard.sh`
+(Mac/Linux) and the dashboard opens with the months already loaded. Opening
+`index.html` directly works too — see *Why not just double-click index.html?*
+below for what changes.
+
+Either way it needs **no internet connection**: the basemap is a set of
 simplified Thai province polygons bundled with the page and drawn to a canvas,
-so there are no map tiles and no network requests at all.
+so there are no map tiles and no requests leave the machine.
 
 ## What it shows
 
@@ -60,6 +64,8 @@ Two customers carry a negative sales amount (−฿9,768 and −฿323.70).
 ## Files
 
 ```
+start-dashboard.bat     double-click to serve + open the dashboard (Windows)
+start-dashboard.sh      the same for Mac / Linux
 index.html              markup
 app.css                 theme tokens (light + dark) and layout
 app.js                  canvas map, charts, filters, table, Excel loading
@@ -92,22 +98,34 @@ already present replaces it, so re-loading after a corrected export just updates
 it. Excel `~$` lock files, files with any other name, and files with no `YYYYMM`
 are skipped — the last of those is reported so a typo does not pass unnoticed.
 
-**How much clicking this takes depends on how the page is opened**, and the
-difference is a browser security rule, not a setting:
+### Start it this way
+
+**Double-click `start-dashboard.bat`** (Windows) or run `./start-dashboard.sh`
+(Mac/Linux). It serves the folder on `localhost` and opens the dashboard, and
+that is the only mode where **everything loads with nothing to click at all** —
+the page reads `source/` by itself on every open. Keep the console window open
+while using it; closing it stops the server. Any Python 3 install works; nothing
+else is needed.
+
+### Why not just double-click index.html?
+
+You can, and the dashboard works — but loading the Excel files gets harder,
+because of a browser security rule rather than anything in this code:
 
 | Opened via | What happens |
 |---|---|
-| A web server — GitHub Pages, or `python3 -m http.server` in `sales-map` | **Nothing to click.** The page reads `source/` itself on every open, and **Re-Load Data** re-reads it. |
-| `file://` — double-clicking `index.html`, Chrome or Edge | **Re-Load Data** asks for the `source` folder *once*; the grant is remembered, so every click after that re-loads silently. |
-| `file://` — Firefox or Safari | **Re-Load Data** opens the ordinary file picker; the files are chosen each time. |
+| `start-dashboard.bat` / `.sh`, or GitHub Pages | **Nothing to click.** `source/` is read on every open; **Re-Load Data** re-reads it. |
+| `file://` — Chrome or Edge | **Re-Load Data** asks for the `source` folder once. If Chrome accepts it, later clicks are silent. |
+| `file://` — Firefox or Safari | **Re-Load Data** opens the file picker; files are chosen each time. |
 
 A `file://` page is forbidden from reading any path it was not explicitly
-handed — that is why the one-time grant exists and why no amount of code can
-remove it. Serving the folder is what makes it fully automatic:
-
-```bash
-cd sales-map && python3 -m http.server 8000    # then open http://localhost:8000
-```
+handed, so the grant dialog is unavoidable there. Worse, **Chrome refuses that
+grant outright for folders it treats as sensitive** — the Desktop, Documents,
+Downloads and drive roots among them — with *"Can't open this folder because it
+contains system files"*. If that appears, either move the `sales-map` folder
+somewhere plainer (`C:\dashboards\sales-map`), or just use the launcher, which
+sidesteps folder permissions entirely. The dashboard falls back to the file
+picker so nothing is ever a dead end.
 
 On a server that does not list directory contents (GitHub Pages), the page
 cannot see what is in the folder, so it asks for the last 24 months by name.
