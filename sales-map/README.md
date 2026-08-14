@@ -85,37 +85,63 @@ python3 tools/build_data.py
 ```
 
 ```
-sales-map/source/Qlikview_Sales_by_Customer_Location_202608.xlsx   ← drop it here
+sales-map/source/
+├── Qlikview_Sales_by_Customer_Location_202607.xlsx
+├── Qlikview_Sales_by_Customer_Location_202608.xlsx   ← drop each new month here
+└── Qlikview_Sales_by_Customer_Location_202609.xlsx
 ```
 
-That is the whole procedure. The script picks the file with the highest `YYYYMM`
-in `source/`, works the period out of that filename, re-reads the sheet,
-re-assigns every customer to a province and region, and rewrites
-`data/sales.js` and `data/thailand.js`. **Nothing in the code or the HTML needs
-editing for a new month** — the heading, the page title and the chart subtitle
-all follow the data.
+That is the whole procedure. **Keep every month in `source/`** — the script
+builds all of them, and each becomes an option in the dashboard's **Period**
+filter. Nothing in the code or the HTML needs editing for a new month: the
+period list, the heading, the page title and the chart subtitle all follow the
+files on disk.
 
-Old exports can stay in `source/`; the script always takes the newest, so there
-is nothing to clean up. It prints a per-region summary on every run so the
-totals can be reconciled against QlikView:
+The `YYYYMM` in each filename is what identifies the month, so the filename
+matters. Two files claiming the same month, or a filename with no `YYYYMM`, stop
+the build with an explanatory message rather than producing a silently wrong
+dashboard.
+
+Every run prints a per-month, per-region summary so totals can be reconciled
+against QlikView:
 
 ```
-export : Qlikview_Sales_by_Customer_Location_202607.xlsx  ->  July 2026
-customers mapped : 443
-customers unmapped: 79
-total sales      : 330,695,503.82
-  North        68 customers        9,198,044.00
-  ...
+July 2026  (Qlikview_Sales_by_Customer_Location_202607.xlsx)
+  customers mapped   : 443
+  customers unmapped : 79
+  total sales        : 330,695,503.82
+    North        68 customers        9,198,044.00
+    ...
 ```
 
 The sheet must keep its current columns (`Store_ID`, `Store_Name`, `Lat`, `Lng`,
 `SalesGroup`, `SalesAmt`, `SalesQty`) — see `source/README.md`.
 
-To rebuild from a file kept somewhere else, pass it explicitly:
+To build from files kept somewhere else, pass them explicitly:
 
 ```bash
-python3 tools/build_data.py /path/to/export.xlsx
+python3 tools/build_data.py /path/to/*.xlsx
 ```
+
+## Filtering by period
+
+The **Period** dropdown sits first in the filter row and drives everything on the
+page at once — map pins, KPI tiles, both charts and the table.
+
+- It lists every month found in `source/`, newest first, and opens on the newest.
+- Once there are two or more months it also offers **All periods**, which sums
+  each customer across every month (matched by `Store_ID`). A customer's name,
+  province and coordinates then come from the most recent month it appears in,
+  and its map tooltip gains a "Months: 2 of 3" line showing how many months it
+  traded in.
+- Pin sizes are scaled *within* the selected period, so the largest customer of
+  the selected month always reads as the largest pin. Pin areas are therefore
+  comparable inside one period, not across two.
+- Region chips, the search box and the table sort are independent of the period
+  and survive a period change; the map selection is cleared and the view refits.
+
+With a single month loaded the dropdown simply shows that month and there is no
+**All periods** entry.
 
 Province boundaries come from the public
 [`apisit/thailand.json`](https://github.com/apisit/thailand.json) dataset,

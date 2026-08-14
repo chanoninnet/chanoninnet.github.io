@@ -2,11 +2,12 @@
 
 Drop the QlikView "Sales by Customer Location" `.xlsx` in this folder, keeping
 the filename exactly as QlikView produces it — the `YYYYMM` at the end is how
-the build script picks the newest file and works out the period shown on the
-dashboard:
+the build script identifies the month:
 
 ```
+source/Qlikview_Sales_by_Customer_Location_202607.xlsx
 source/Qlikview_Sales_by_Customer_Location_202608.xlsx
+source/Qlikview_Sales_by_Customer_Location_202609.xlsx
 ```
 
 Then, from the `sales-map` folder, run:
@@ -15,9 +16,18 @@ Then, from the `sales-map` folder, run:
 python3 tools/build_data.py
 ```
 
-That rewrites `data/sales.js` and `data/thailand.js`, and the dashboard heading
-updates itself. Old months can stay here — the script always uses the highest
-`YYYYMM`, so nothing needs deleting.
+That rewrites `data/sales.js` and `data/thailand.js`.
+
+**Keep every month here — do not delete the old ones.** The script builds all of
+them and each becomes an option in the dashboard's **Period** filter, so the
+files in this folder are exactly the months you will be able to choose between.
+
+Two rules the build enforces, so a mistake cannot produce a wrong dashboard:
+
+- every filename needs a `YYYYMM`;
+- no two files may claim the same month.
+
+Either problem stops the build with a message naming the files involved.
 
 The sheet must keep its current columns:
 

@@ -58,7 +58,12 @@
   // -------------------------------------------------------------------------
   // state
   // -------------------------------------------------------------------------
+  // Every month found in source/, oldest first. The newest is what opens.
+  var PERIODS = DATA.periods || [];
+  var ALL_PERIODS = "__all__";
+
   var state = {
+    period: PERIODS.length ? PERIODS[PERIODS.length - 1].period : "",
     activeRegions: new Set(REGIONS),
     query: "",
     includeUnmapped: true,
@@ -67,24 +72,91 @@
     sortDir: -1
   };
 
-  var TOTALS = (function () {
+  /* Sum one customer across every month, keyed by ID. Identity fields come
+     from the most recent month the customer appears in, so a renamed or
+     relocated customer shows its latest details. */
+  function combineAllPeriods() {
+    var mapped = {}, unmapped = {};
+    PERIODS.forEach(function (p) {
+      p.customers.forEach(function (c) {
+        var t = mapped[c.id];
+        if (!t) { mapped[c.id] = t = copyRow(c); t.amt = 0; t.qty = 0; }
+        else { t.name = c.name; t.prov = c.prov; t.region = c.region; t.group = c.group; t.lat = c.lat; t.lng = c.lng; t.wx = c.wx; t.wy = c.wy; }
+        t.amt += c.amt; t.qty += c.qty; t.months = (t.months || 0) + 1;
+      });
+      p.unmapped.forEach(function (u) {
+        var t = unmapped[u.id];
+        if (!t) { unmapped[u.id] = t = copyRow(u); t.amt = 0; t.qty = 0; }
+        else { t.name = u.name; t.group = u.group; }
+        t.amt += u.amt; t.qty += u.qty; t.months = (t.months || 0) + 1;
+      });
+    });
+    return {
+      period: ALL_PERIODS,
+      label: PERIODS.length
+        ? "All periods (" + PERIODS[0].label + " – " + PERIODS[PERIODS.length - 1].label + ")"
+        : "All periods",
+      shortLabel: "All periods",
+      source: PERIODS.length + " monthly exports",
+      customers: Object.keys(mapped).map(function (k) { return mapped[k]; }),
+      unmapped: Object.keys(unmapped).map(function (k) { return unmapped[k]; })
+    };
+  }
+
+  function copyRow(row) {
+    var out = {};
+    for (var k in row) if (Object.prototype.hasOwnProperty.call(row, k)) out[k] = row[k];
+    return out;
+  }
+
+  var COMBINED = null;                                // built lazily, then cached
+
+  /** The dataset the whole dashboard currently reads from. */
+  function currentPeriod() {
+    if (state.period === ALL_PERIODS) {
+      if (!COMBINED) COMBINED = combineAllPeriods();
+      return COMBINED;
+    }
+    for (var i = 0; i < PERIODS.length; i++) {
+      if (PERIODS[i].period === state.period) return PERIODS[i];
+    }
+    return PERIODS[PERIODS.length - 1];
+  }
+
+  var CUR = null;                                     // set by selectPeriod()
+  var TOTALS = null;
+  var MAX_AMOUNT = 0;
+
+  function computeTotals() {
     var byRegion = {};
     REGIONS.forEach(function (r) { byRegion[r] = { amount: 0, qty: 0, count: 0 }; });
-    DATA.customers.forEach(function (c) {
+    CUR.customers.forEach(function (c) {
       var b = byRegion[c.region];
       b.amount += c.amt; b.qty += c.qty; b.count += 1;
     });
-    var unmapped = { amount: 0, qty: 0, count: DATA.unmapped.length };
-    DATA.unmapped.forEach(function (u) { unmapped.amount += u.amt; unmapped.qty += u.qty; });
+    var unmapped = { amount: 0, qty: 0, count: CUR.unmapped.length };
+    CUR.unmapped.forEach(function (u) { unmapped.amount += u.amt; unmapped.qty += u.qty; });
     var mapped = REGIONS.reduce(function (s, r) { return s + byRegion[r].amount; }, 0);
-    return {
+    TOTALS = {
       byRegion: byRegion,
       unmapped: unmapped,
       mapped: mapped,
       grand: mapped + unmapped.amount,
-      customers: DATA.customers.length + DATA.unmapped.length
+      customers: CUR.customers.length + CUR.unmapped.length
     };
-  }());
+  }
+
+  /* Pin sizes are scaled within the selected period, so the biggest customer
+     of the month always reads as the biggest pin. */
+  function selectPeriod(periodId) {
+    state.period = periodId;
+    CUR = currentPeriod();
+    computeTotals();
+    MAX_AMOUNT = CUR.customers.reduce(function (m, c) {
+      return Math.max(m, Math.abs(c.amt));
+    }, 0);
+    syncPeriodLabels();
+  }
 
   function matchesQuery(row) {
     if (!state.query) return true;
@@ -96,16 +168,16 @@
       (row.group || "").toLowerCase().indexOf(q) !== -1;
   }
 
-  /** Customers currently drawn on the map (region chips + search). */
+  /** Customers currently drawn on the map (period + region chips + search). */
   function visibleCustomers() {
-    return DATA.customers.filter(function (c) {
+    return CUR.customers.filter(function (c) {
       return state.activeRegions.has(c.region) && matchesQuery(c);
     });
   }
 
   function visibleUnmapped() {
     if (!state.includeUnmapped) return [];
-    return DATA.unmapped.filter(matchesQuery);
+    return CUR.unmapped.filter(matchesQuery);
   }
 
   // =========================================================================
@@ -156,14 +228,12 @@
     return b;
   }());
 
-  DATA.customers.forEach(function (c) {
-    c.wx = projX(c.lng);
-    c.wy = projY(c.lat);
+  PERIODS.forEach(function (p) {
+    p.customers.forEach(function (c) {
+      c.wx = projX(c.lng);
+      c.wy = projY(c.lat);
+    });
   });
-
-  var MAX_AMOUNT = DATA.customers.reduce(function (m, c) {
-    return Math.max(m, Math.abs(c.amt));
-  }, 0);
 
   var R_MIN = 4, R_MAX = 30;
 
@@ -344,6 +414,8 @@
       "<dt>Province</dt><dd>" + escapeHtml(c.prov) + " / " + escapeHtml(DATA.provinceTh[c.prov] || "") + "</dd>" +
       "<dt>Region</dt><dd><span class=\"tip-region\">" + escapeHtml(c.region) + "</span></dd>" +
       "<dt>Group</dt><dd>" + (c.group ? escapeHtml(c.group) : "—") + "</dd>" +
+      (state.period === ALL_PERIODS
+        ? "<dt>Months</dt><dd>" + c.months + " of " + PERIODS.length + "</dd>" : "") +
       "<dt>ID</dt><dd>" + c.id + "</dd>" +
       "</dl>";
 
@@ -760,7 +832,7 @@
       tr.addEventListener("click", function () {
         var id = Number(tr.getAttribute("data-id"));
         state.selectedId = state.selectedId === id ? null : id;
-        var c = DATA.customers.filter(function (x) { return x.id === id; })[0];
+        var c = CUR.customers.filter(function (x) { return x.id === id; })[0];
         if (c && state.selectedId) {
           view.cx = c.wx; view.cy = c.wy;
           if (view.scale < 2200) view.scale = 2200;
@@ -851,15 +923,52 @@
     drawMap();
   }
 
+  // --- period ---------------------------------------------------------------
+  // Periods come from the filenames in source/, so adding a month needs no
+  // code change: the new export simply appears as another option here.
+  function renderPeriodSelect() {
+    if (!PERIODS.length) return;
+    var sel = el("periodSelect");
+    el("periodGroup").hidden = false;
+
+    // Newest first — that is the month people reach for. "All periods" only
+    // means something once a second month has been added to source/.
+    sel.innerHTML = PERIODS.slice().reverse().map(function (p) {
+      return '<option value="' + p.period + '">' + escapeHtml(p.label) + "</option>";
+    }).join("") + (PERIODS.length > 1
+      ? '<option value="' + ALL_PERIODS + '">All periods (' +
+        escapeHtml(PERIODS[0].label) + " – " +
+        escapeHtml(PERIODS[PERIODS.length - 1].label) + ")</option>"
+      : "");
+    sel.value = state.period;
+
+    sel.addEventListener("change", function () {
+      selectPeriod(sel.value);
+      state.selectedId = null;
+      fitView();
+      renderAll();
+    });
+  }
+
+  /** Period text that appears outside the charts. */
+  function syncPeriodLabels() {
+    var label = CUR.shortLabel || CUR.label || "";
+    el("periodLabel").textContent = label;
+    el("sourceName").textContent = CUR.source || "";
+    if (label) document.title = "Sales by Customer Location — " + label;
+    el("barsSub").textContent = PERIODS.length > 1
+      ? "Total across all customers in " + (CUR.label || "the period") + "."
+      : "Total across all customers in " + (label || "the period") + ".";
+    var sel = el("periodSelect");
+    if (sel && sel.value !== state.period) sel.value = state.period;
+  }
+
+  // Pick the period before anything reads CUR / TOTALS / MAX_AMOUNT.
+  selectPeriod(state.period);
+  renderPeriodSelect();
+
   new ResizeObserver(function () { resize(); renderBars(); renderProvinces(); }).observe(stage);
   window.addEventListener("resize", function () { renderBars(); renderProvinces(); });
-
-  // The period comes from the export's filename, so a new month needs no edits.
-  var periodLabel = DATA.periodLabel || DATA.period || "";
-  el("periodLabel").textContent = periodLabel;
-  el("sourceName").textContent = DATA.source || "";
-  if (periodLabel) document.title = "Sales by Customer Location — " + periodLabel;
-  el("barsSub").textContent = "Total across all customers in " + (periodLabel || "the period") + ".";
 
   syncThemeLabel();
   resize();

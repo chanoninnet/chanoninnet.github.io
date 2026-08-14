@@ -36,24 +36,6 @@ MONTHS = ["January", "February", "March", "April", "May", "June",
           "July", "August", "September", "October", "November", "December"]
 
 
-def newest_export():
-    """The highest-numbered YYYYMM export sitting in source/."""
-    found = []
-    for path in SOURCE_DIR.glob("*.xlsx"):
-        if path.name.startswith("~$"):               # Excel lock file
-            continue
-        match = re.search(r"(20\d{2})(0[1-9]|1[0-2])", path.name)
-        found.append((match.group(0) if match else "", path))
-    if not found:
-        sys.exit(
-            "No .xlsx found in " + str(SOURCE_DIR) + "\n"
-            "Put the monthly QlikView export there, for example\n"
-            "  source/Qlikview_Sales_by_Customer_Location_202608.xlsx"
-        )
-    found.sort(key=lambda pair: (pair[0], pair[1].name))
-    return found[-1][1]
-
-
 def period_from_name(name):
     """('2026-07', 'July 2026') parsed out of the filename's YYYYMM stamp."""
     match = re.search(r"(20\d{2})(0[1-9]|1[0-2])", name)
@@ -61,6 +43,48 @@ def period_from_name(name):
         return "", ""
     year, month = match.group(1), int(match.group(2))
     return year + "-" + match.group(2), MONTHS[month - 1] + " " + year
+
+
+def collect_exports(paths=None):
+    """Every monthly export to build, oldest first, as (period, label, path).
+
+    With no explicit paths this scans source/, so adding a month is just a
+    matter of dropping the file in — every month found is kept and becomes one
+    option in the dashboard's period filter.
+    """
+    if paths is None:
+        paths = [p for p in sorted(SOURCE_DIR.glob("*.xlsx"))
+                 if not p.name.startswith("~$")]     # skip Excel lock files
+        if not paths:
+            sys.exit(
+                "No .xlsx found in " + str(SOURCE_DIR) + "\n"
+                "Put the monthly QlikView export there, for example\n"
+                "  source/Qlikview_Sales_by_Customer_Location_202608.xlsx"
+            )
+
+    found, undated = {}, []
+    for path in paths:
+        period, label = period_from_name(path.name)
+        if not period:
+            undated.append(path.name)
+            continue
+        if period in found:
+            sys.exit(
+                "Two exports claim the same period " + period + ":\n"
+                "  " + found[period][1].name + "\n  " + path.name + "\n"
+                "Keep one file per month in source/."
+            )
+        found[period] = (label, path)
+
+    if undated:
+        sys.exit(
+            "No YYYYMM period in these filenames:\n  " + "\n  ".join(undated) + "\n"
+            "Keep the QlikView filename, e.g. "
+            "Qlikview_Sales_by_Customer_Location_202608.xlsx"
+        )
+
+    return [(period, found[period][0], found[period][1])
+            for period in sorted(found)]
 
 # Thailand's official four-region grouping (National Statistical Office). The
 # four-region scheme is what the dashboard colours by: a bubble map is an
@@ -225,16 +249,8 @@ def js_dump(path, var, payload):
 
 
 # --------------------------------------------------------------------------
-def main(xlsx_path, geojson_path):
-    xlsx_path = Path(xlsx_path)
-    period, period_label = period_from_name(xlsx_path.name)
-    if not period:
-        sys.exit(
-            "Cannot read a YYYYMM period from '" + xlsx_path.name + "'.\n"
-            "Keep the QlikView filename, e.g. "
-            "Qlikview_Sales_by_Customer_Location_202608.xlsx"
-        )
-    print("export : " + xlsx_path.name + "  ->  " + period_label)
+def main(exports, geojson_path):
+    print("building " + str(len(exports)) + " period(s) from " + str(SOURCE_DIR))
 
     geo = json.loads(Path(geojson_path).read_text(encoding="utf-8"))
 
@@ -248,7 +264,59 @@ def main(xlsx_path, geojson_path):
         polys = [p for p in polys if ring_area(p[0]) >= biggest * 0.004]
         provinces.append({"name": name, "polys": polys})
 
-    # ---- assign customers -------------------------------------------------
+    # ---- assign customers, one entry per monthly export --------------------
+    periods = []
+    for period, label, path in exports:
+        customers, unmapped, outside = read_export(path, provinces)
+        periods.append({
+            "period": period,
+            "label": label,
+            "source": path.name,
+            "customers": customers,
+            "unmapped": unmapped,
+        })
+        report_period(label, path, customers, unmapped, outside)
+
+    # ---- write the basemap ------------------------------------------------
+    features = []
+    for p in provinces:
+        polys = []
+        for poly in p["polys"]:
+            rings = []
+            for ring in poly:
+                pts = simplify([(c[0], c[1]) for c in ring], 0.004)
+                if len(pts) >= 4:
+                    rings.append([[round(x, 4), round(y, 4)] for x, y in pts])
+            if rings:
+                polys.append(rings)
+        if polys:
+            features.append({
+                "name": p["name"],
+                "nameTh": PROVINCE_TH.get(p["name"], p["name"]),
+                "region": PROVINCE_REGION[p["name"]],
+                "polys": polys,
+            })
+
+    map_bytes = js_dump(OUT / "thailand.js", "THAILAND_MAP", {
+        "source": "apisit/thailand.json province boundaries, "
+                  "Douglas-Peucker simplified to ~0.004deg",
+        "provinces": features,
+    })
+
+    data_bytes = js_dump(OUT / "sales.js", "SALES_DATA", {
+        "regionOrder": REGION_ORDER,
+        "regionTh": REGION_TH,
+        "provinceTh": PROVINCE_TH,
+        "periods": periods,
+    })
+
+    print(f"\n{len(periods)} period(s) written: " +
+          ", ".join(p["label"] for p in periods))
+    print(f"thailand.js {map_bytes/1024:.0f} KB   sales.js {data_bytes/1024:.0f} KB")
+
+
+def read_export(xlsx_path, provinces):
+    """One month's sheet -> (mapped customers, unmapped customers, snap count)."""
     ws = openpyxl.load_workbook(xlsx_path, data_only=True)["Sheet1"]
     rows = list(ws.iter_rows(min_row=2, values_only=True))
 
@@ -286,55 +354,23 @@ def main(xlsx_path, geojson_path):
             "prov": province, "region": PROVINCE_REGION[province],
         })
 
-    # ---- write the basemap ------------------------------------------------
-    features = []
-    for p in provinces:
-        polys = []
-        for poly in p["polys"]:
-            rings = []
-            for ring in poly:
-                pts = simplify([(c[0], c[1]) for c in ring], 0.004)
-                if len(pts) >= 4:
-                    rings.append([[round(x, 4), round(y, 4)] for x, y in pts])
-            if rings:
-                polys.append(rings)
-        if polys:
-            features.append({
-                "name": p["name"],
-                "nameTh": PROVINCE_TH.get(p["name"], p["name"]),
-                "region": PROVINCE_REGION[p["name"]],
-                "polys": polys,
-            })
+    return customers, unmapped, outside
 
-    map_bytes = js_dump(OUT / "thailand.js", "THAILAND_MAP", {
-        "source": "apisit/thailand.json province boundaries, "
-                  "Douglas-Peucker simplified to ~0.004deg",
-        "provinces": features,
-    })
 
-    data_bytes = js_dump(OUT / "sales.js", "SALES_DATA", {
-        "period": period,
-        "periodLabel": period_label,
-        "source": xlsx_path.name,
-        "regionOrder": REGION_ORDER,
-        "regionTh": REGION_TH,
-        "provinceTh": PROVINCE_TH,
-        "customers": customers,
-        "unmapped": unmapped,
-    })
-
-    # ---- report -----------------------------------------------------------
+def report_period(label, path, customers, unmapped, outside):
+    """Per-month summary, so totals can be reconciled against QlikView."""
     total = sum(c["amt"] for c in customers) + sum(u["amt"] for u in unmapped)
-    print(f"customers mapped : {len(customers)}")
-    print(f"customers unmapped: {len(unmapped)}")
-    print(f"outside a polygon (snapped to nearest): {outside}")
-    print(f"total sales      : {total:,.2f}")
+    print(f"\n{label}  ({path.name})")
+    print(f"  customers mapped   : {len(customers)}")
+    print(f"  customers unmapped : {len(unmapped)}")
+    print(f"  snapped to nearest : {outside}")
+    print(f"  total sales        : {total:,.2f}")
     for region in REGION_ORDER:
         sub = [c for c in customers if c["region"] == region]
-        print(f"  {region:<10} {len(sub):>4} customers  {sum(c['amt'] for c in sub):>18,.2f}")
-    print(f"  {'Unmapped':<10} {len(unmapped):>4} customers  "
+        print(f"    {region:<10} {len(sub):>4} customers  "
+              f"{sum(c['amt'] for c in sub):>18,.2f}")
+    print(f"    {'Unmapped':<10} {len(unmapped):>4} customers  "
           f"{sum(u['amt'] for u in unmapped):>18,.2f}")
-    print(f"thailand.js {map_bytes/1024:.0f} KB   sales.js {data_bytes/1024:.0f} KB")
 
 
 def nearest_province(x, y, provinces):
@@ -349,8 +385,10 @@ def nearest_province(x, y, provinces):
 
 
 if __name__ == "__main__":
-    xlsx = Path(sys.argv[1]) if len(sys.argv) > 1 else newest_export()
-    geojson = Path(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_GEOJSON
+    args = [Path(a) for a in sys.argv[1:]]
+    geojson = DEFAULT_GEOJSON
+    if args and args[-1].suffix.lower() in (".geojson", ".json"):
+        geojson = args.pop()
     if not geojson.exists():
         sys.exit("Province boundaries missing: " + str(geojson))
-    main(xlsx, geojson)
+    main(collect_exports(args or None), geojson)

@@ -231,6 +231,11 @@ h2 { font-size: 15px; }
   font-variant-numeric: tabular-nums;
 }
 
+.select {
+  width: auto;
+  min-width: 190px;
+  cursor: pointer;
+}
 .search {
   width: 240px;
   max-width: 46vw;
