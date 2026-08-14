@@ -93,6 +93,10 @@ sales-map/source/Qlikview_Sales_by_Customer_Location_202607.xlsx
 sales-map/source/Qlikview_Sales_by_Customer_Location_202608.xlsx
 ```
 
+**The page loads these by itself when it opens** — the button is only there to
+re-read the folder after dropping a new month in, and to cover the cases in the
+table below where the browser will not allow reading on its own.
+
 Each file becomes an entry in the **Period** dropdown. Loading a month that is
 already present replaces it, so re-loading after a corrected export just updates
 it. Excel `~$` lock files, files with any other name, and files with no `YYYYMM`
@@ -112,11 +116,11 @@ else is needed.
 You can, and the dashboard works — but loading the Excel files gets harder,
 because of a browser security rule rather than anything in this code:
 
-| Opened via | What happens |
+| Opened via | Loads on open, no click? |
 |---|---|
-| `start-dashboard.bat` / `.sh`, or GitHub Pages | **Nothing to click.** `source/` is read on every open; **Re-Load Data** re-reads it. |
-| `file://` — Chrome or Edge | **Re-Load Data** asks for the `source` folder once. If Chrome accepts it, later clicks are silent. |
-| `file://` — Firefox or Safari | **Re-Load Data** opens the file picker; files are chosen each time. |
+| `start-dashboard.bat` / `.sh`, or GitHub Pages | **Yes, always.** `source/` is read every time the page opens. |
+| `file://` — Chrome or Edge | **Yes, after the folder has been granted once** — choose **Allow on every visit** in Chrome's permission prompt and the page reads `source/` on open from then on. If the grant lapses, the page waits quietly for **Re-Load Data** rather than prompting. |
+| `file://` — Firefox or Safari | No. Files are picked by hand; once loaded they are remembered and come back on open. |
 
 A `file://` page is forbidden from reading any path it was not explicitly
 handed, so the grant dialog is unavoidable there. Worse, **Chrome refuses that

@@ -1227,12 +1227,20 @@
     e.target.value = "";                              // allow reloading the same file
   });
 
-  // On a served page the exports load on their own; on file:// pick the
-  // remembered grant back up but never prompt without a click.
+  // Load on open, without anything to click.
   if (SF.overHttp) {
+    // Served: the page can read `source/` on its own.
     reloadOverHttp(true);
   } else if (SF.canGrant) {
-    SF.recall().then(function (handle) { folderHandle = handle || null; });
+    SF.recall().then(async function (handle) {
+      folderHandle = handle || null;
+      if (!handle) return;
+      // From a file:// page this only works when the browser kept the earlier
+      // grant — Chrome does when "Allow on every visit" was chosen. Asking
+      // again would need a click; checking does not, so a lapsed grant simply
+      // waits quietly for Re-Load Data instead of prompting on open.
+      if (await SF.allowed(handle, false)) await reloadFromHandle(handle, false);
+    });
   }
 
   el("clearBtn").addEventListener("click", function () {
