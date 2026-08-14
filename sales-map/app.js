@@ -254,7 +254,7 @@
   var drawn = [];                                     // hit-test list, draw order
 
   function fitView() {
-    var padded = 0.94;
+    var padded = 0.985;                               // land nearly to the edges
     var bw = BOUNDS.x1 - BOUNDS.x0;
     var bh = BOUNDS.y1 - BOUNDS.y0;
     view.scale = Math.min(size.w / bw, size.h / bh) * padded;

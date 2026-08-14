@@ -311,10 +311,15 @@ h2 { font-size: 15px; }
 .grid {
   display: grid;
   gap: 14px;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  /* The map column is the narrower one: Thailand is a tall, narrow shape, and
+     a tall column is what lets it fill its card instead of floating in sea. */
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr);
   align-items: start;
 }
-.col-right   { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+/* Stretch beside the tall map card so the two columns end level, and let the
+   last panel take up the slack rather than leaving a ragged gap. */
+.col-right   { display: flex; flex-direction: column; gap: 14px; min-width: 0; align-self: stretch; }
+.col-right .panel-prov { flex: 1; }
 .panel-table { grid-column: 1 / -1; }
 
 @media (max-width: 940px) {
@@ -344,17 +349,23 @@ h2 { font-size: 15px; }
 .map-tools, .table-tools { display: flex; align-items: center; gap: 6px; flex: none; }
 
 /* --- map ------------------------------------------------------------------- */
+/* The map runs the full width of its card, edge to edge — the negative margins
+   cancel the panel padding — and is shaped close to Thailand's own proportions
+   so the land fills the stage rather than sitting in a wide band of sea. */
 .map-stage {
   position: relative;
-  border: 1px solid var(--border);
-  border-radius: 10px;
   overflow: hidden;
   background: var(--sea);
-  /* Thailand is a tall, narrow shape — a portrait stage wastes less sea. */
-  aspect-ratio: 5 / 7;
-  max-height: 82vh;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  margin: 0 -16px;
+  aspect-ratio: 5 / 8;
 }
-@media (max-width: 940px) { .map-stage { aspect-ratio: 3 / 4; } }
+/* Single column: the card is now full page width, so cap the height rather
+   than let the same ratio produce a map taller than the screen. */
+@media (max-width: 940px) {
+  .map-stage { aspect-ratio: 5 / 7; max-height: 86vh; }
+}
 
 #map {
   display: block;

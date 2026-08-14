@@ -29,6 +29,22 @@
   <div class="drop-card">Drop QlikView <b>.xlsx</b> exports to load them</div>
 </div>
 
+<section class="filters" aria-label="Filters">
+  <div class="filter-group" id="periodGroup" hidden>
+    <label class="filter-caption" for="periodSelect">Period</label>
+    <select id="periodSelect" class="search select"></select>
+  </div>
+  <div class="filter-group" role="group" aria-label="Filter by region">
+    <span class="filter-caption">Region</span>
+    <div class="chips" id="regionChips"></div>
+  </div>
+  <div class="filter-group">
+    <label class="filter-caption" for="searchBox">Find customer</label>
+    <input id="searchBox" class="search" type="search" placeholder="Name, ID or province" autocomplete="off">
+  </div>
+  <button id="resetFilters" class="ghost-btn" type="button">Reset</button>
+</section>
+
 <section class="kpis" aria-label="Headline figures">
   <div class="kpi">
     <p class="kpi-label">Total sales amount</p>
@@ -50,22 +66,6 @@
     <p class="kpi-value" id="kpiUnmapped">&mdash;</p>
     <p class="kpi-note" id="kpiUnmappedNote">&mdash;</p>
   </div>
-</section>
-
-<section class="filters" aria-label="Filters">
-  <div class="filter-group" id="periodGroup" hidden>
-    <label class="filter-caption" for="periodSelect">Period</label>
-    <select id="periodSelect" class="search select"></select>
-  </div>
-  <div class="filter-group" role="group" aria-label="Filter by region">
-    <span class="filter-caption">Region</span>
-    <div class="chips" id="regionChips"></div>
-  </div>
-  <div class="filter-group">
-    <label class="filter-caption" for="searchBox">Find customer</label>
-    <input id="searchBox" class="search" type="search" placeholder="Name, ID or province" autocomplete="off">
-  </div>
-  <button id="resetFilters" class="ghost-btn" type="button">Reset</button>
 </section>
 
 <main class="grid">
