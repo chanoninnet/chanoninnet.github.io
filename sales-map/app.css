@@ -308,14 +308,26 @@ h2 { font-size: 15px; }
 }
 
 /* --- layout ---------------------------------------------------------------- */
+/* A 2x2 board: region totals over the map on the left, Top provinces over the
+   customer table on the right. The map column is the narrower one — Thailand
+   is a tall, narrow shape, and a tall column is what lets it fill its card. */
 .grid {
   display: grid;
   gap: 14px;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
   align-items: start;
 }
-.col-right   { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.panel-table { grid-column: 1 / -1; }
+
+/* The table sits beside the tall map card: it stretches to match, and its
+   scroll area grows into that height instead of running on for 522 rows. */
+.panel-table {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.panel-table .table-wrap { flex: 1; min-height: 200px; max-height: 82vh; }
 
 @media (max-width: 940px) {
   .grid { grid-template-columns: minmax(0, 1fr); }
@@ -344,17 +356,23 @@ h2 { font-size: 15px; }
 .map-tools, .table-tools { display: flex; align-items: center; gap: 6px; flex: none; }
 
 /* --- map ------------------------------------------------------------------- */
+/* Full-bleed to the card edges — the negative margins cancel the panel
+   padding — and shaped close to Thailand's own proportions, so the land fills
+   the stage instead of floating in a wide band of sea. */
 .map-stage {
   position: relative;
-  border: 1px solid var(--border);
-  border-radius: 10px;
   overflow: hidden;
   background: var(--sea);
-  /* Thailand is a tall, narrow shape — a portrait stage wastes less sea. */
-  aspect-ratio: 5 / 7;
-  max-height: 82vh;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  margin: 0 -16px;
+  aspect-ratio: 5 / 8;
 }
-@media (max-width: 940px) { .map-stage { aspect-ratio: 3 / 4; } }
+/* Single column: the card is now full page width, so cap the height rather
+   than let the same ratio produce a map taller than the screen. */
+@media (max-width: 940px) {
+  .map-stage { aspect-ratio: 5 / 7; max-height: 86vh; }
+}
 
 #map {
   display: block;
@@ -532,7 +550,7 @@ h2 { font-size: 15px; }
   font-size: 12.5px;
 }
 .data-table th, .data-table td {
-  padding: 7px 12px;
+  padding: 7px 8px;
   text-align: left;
   border-bottom: 1px solid var(--gridline);
   white-space: nowrap;
@@ -556,7 +574,8 @@ h2 { font-size: 15px; }
 }
 .data-table thead th[aria-sort="ascending"]::after { content: "\2191"; }
 .data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
-.data-table td.cust { max-width: 340px; overflow: hidden; text-overflow: ellipsis; }
+.data-table td.cust { max-width: 165px; overflow: hidden; text-overflow: ellipsis; }
+.data-table td:nth-child(2) { max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
 .data-table tbody tr:hover { background: color-mix(in srgb, var(--text-primary) 4%, transparent); }
 .data-table tbody tr.is-selected { background: color-mix(in srgb, var(--focus) 14%, transparent); }
 .data-table tbody tr { cursor: pointer; }

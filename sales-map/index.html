@@ -29,6 +29,22 @@
   <div class="drop-card">Drop QlikView <b>.xlsx</b> exports to load them</div>
 </div>
 
+<section class="filters" aria-label="Filters">
+  <div class="filter-group" id="periodGroup" hidden>
+    <label class="filter-caption" for="periodSelect">Period</label>
+    <select id="periodSelect" class="search select"></select>
+  </div>
+  <div class="filter-group" role="group" aria-label="Filter by region">
+    <span class="filter-caption">Region</span>
+    <div class="chips" id="regionChips"></div>
+  </div>
+  <div class="filter-group">
+    <label class="filter-caption" for="searchBox">Find customer</label>
+    <input id="searchBox" class="search" type="search" placeholder="Name, ID or province" autocomplete="off">
+  </div>
+  <button id="resetFilters" class="ghost-btn" type="button">Reset</button>
+</section>
+
 <section class="kpis" aria-label="Headline figures">
   <div class="kpi">
     <p class="kpi-label">Total sales amount</p>
@@ -52,23 +68,29 @@
   </div>
 </section>
 
-<section class="filters" aria-label="Filters">
-  <div class="filter-group" id="periodGroup" hidden>
-    <label class="filter-caption" for="periodSelect">Period</label>
-    <select id="periodSelect" class="search select"></select>
-  </div>
-  <div class="filter-group" role="group" aria-label="Filter by region">
-    <span class="filter-caption">Region</span>
-    <div class="chips" id="regionChips"></div>
-  </div>
-  <div class="filter-group">
-    <label class="filter-caption" for="searchBox">Find customer</label>
-    <input id="searchBox" class="search" type="search" placeholder="Name, ID or province" autocomplete="off">
-  </div>
-  <button id="resetFilters" class="ghost-btn" type="button">Reset</button>
-</section>
-
 <main class="grid">
+
+  <section class="panel panel-bars" aria-labelledby="barsTitle">
+    <div class="panel-head">
+      <div>
+        <h2 id="barsTitle">Sales amount by region</h2>
+        <p class="panel-sub" id="barsSub">Total across all customers in the period.</p>
+      </div>
+    </div>
+    <svg id="barChart" class="bar-chart" role="img" aria-labelledby="barsTitle"></svg>
+    <div class="bar-foot" id="barFoot"></div>
+  </section>
+
+  <section class="panel panel-prov" aria-labelledby="provTitle">
+    <div class="panel-head">
+      <div>
+        <h2 id="provTitle">Top provinces</h2>
+        <p class="panel-sub" id="provSub">Plotted customers only, coloured by the province&rsquo;s region.</p>
+      </div>
+    </div>
+    <svg id="provChart" class="bar-chart" role="img" aria-labelledby="provTitle"></svg>
+    <div class="bar-foot" id="provFoot"></div>
+  </section>
 
   <section class="panel panel-map" aria-labelledby="mapTitle">
     <div class="panel-head">
@@ -95,30 +117,6 @@
 
     <div class="legend" id="regionLegend" aria-label="Region colour key"></div>
   </section>
-
-  <div class="col-right">
-  <section class="panel panel-bars" aria-labelledby="barsTitle">
-    <div class="panel-head">
-      <div>
-        <h2 id="barsTitle">Sales amount by region</h2>
-        <p class="panel-sub" id="barsSub">Total across all customers in the period.</p>
-      </div>
-    </div>
-    <svg id="barChart" class="bar-chart" role="img" aria-labelledby="barsTitle"></svg>
-    <div class="bar-foot" id="barFoot"></div>
-  </section>
-
-  <section class="panel panel-prov" aria-labelledby="provTitle">
-    <div class="panel-head">
-      <div>
-        <h2 id="provTitle">Top provinces</h2>
-        <p class="panel-sub" id="provSub">Plotted customers only, coloured by the province&rsquo;s region.</p>
-      </div>
-    </div>
-    <svg id="provChart" class="bar-chart" role="img" aria-labelledby="provTitle"></svg>
-    <div class="bar-foot" id="provFoot"></div>
-  </section>
-  </div>
 
   <section class="panel panel-table" aria-labelledby="tableTitle">
     <div class="panel-head">
