@@ -62,7 +62,9 @@ Two customers carry a negative sales amount (−฿9,768 and −฿323.70).
 ```
 index.html              markup
 app.css                 theme tokens (light + dark) and layout
-app.js                  canvas map, charts, filters, table
+app.js                  canvas map, charts, filters, table, Excel loading
+xlsx.js                 minimal in-browser .xlsx reader (no libraries)
+ingest.js               sheet -> customers + regions, the browser twin of the script
 source/                 >>> put the monthly .xlsx export here <<<
 data/thailand.js        simplified province polygons  (~142 KB)
 data/sales.js           522 customers, region-assigned (~79 KB)
@@ -73,7 +75,31 @@ tools/thailand.geojson  full-resolution province boundaries (build input)
 `data/` is generated — never edit those two files by hand; re-run the script
 instead.
 
-## Monthly refresh — where the Excel file goes
+## Loading a month: two ways
+
+**The quick way — the Load Excel button.** Click **Load Excel…** in the top
+right (or drag the file anywhere onto the page) and pick a QlikView `.xlsx`.
+The page reads it, assigns regions, and switches to that month straight away.
+No Python, no command line, no rebuild.
+
+- Several files can be picked at once.
+- Loaded months are remembered in the browser and come back next time you open
+  the page. **Clear loaded** removes them again.
+- They live in *your browser only*. Sending the folder to a colleague sends the
+  months built by the script, not the ones you loaded — for that, use the
+  script way below.
+- The reader is built from browser APIs (`DecompressionStream` + `DOMParser`),
+  so it still needs no libraries and no network. On a browser too old to
+  support it, the button explains that and the script route still works.
+- Province assignment here uses the simplified boundaries the page draws
+  (~450 m), so a customer within a few hundred metres of a provincial border
+  can fall on the other side of it compared with the script. Everything else
+  matches exactly.
+
+**The permanent way — the build script.** Use this for months that should ship
+with the dashboard for everyone.
+
+## Monthly refresh with the script — where the Excel file goes
 
 Put the new QlikView export in **`source/`**, keeping the filename QlikView
 gives it, then run the script with no arguments:
@@ -128,7 +154,9 @@ python3 tools/build_data.py /path/to/*.xlsx
 The **Period** dropdown sits first in the filter row and drives everything on the
 page at once — map pins, KPI tiles, both charts and the table.
 
-- It lists every month found in `source/`, newest first, and opens on the newest.
+- It lists every month the page knows about — those built into `data/sales.js`
+  plus any loaded through **Load Excel…** — newest first, and opens on the
+  newest. Loading a month that already exists replaces it.
 - Once there are two or more months it also offers **All periods**, which sums
   each customer across every month (matched by `Store_ID`). A customer's name,
   province and coordinates then come from the most recent month it appears in,

@@ -135,6 +135,65 @@ h2 { font-size: 15px; }
   cursor: pointer;
 }
 .ghost-btn:hover { color: var(--text-primary); border-color: var(--axis); }
+.ghost-btn[disabled], .primary-btn[disabled] { opacity: .5; cursor: default; }
+
+.topbar-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+
+.primary-btn {
+  padding: 6px 13px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: var(--focus);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.primary-btn:hover:not([disabled]) { filter: brightness(1.08); }
+
+/* --- load status + drag target -------------------------------------------- */
+.load-status {
+  margin: 0 0 14px;
+  padding: 9px 13px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--axis);
+  border-radius: 8px;
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  white-space: pre-line;
+}
+.load-status[data-tone="ok"]    { border-left-color: #0ca30c; }
+.load-status[data-tone="warn"]  { border-left-color: var(--warn); }
+.load-status[data-tone="error"] { border-left-color: #d03b3b; color: var(--text-primary); }
+.load-status b { color: var(--text-primary); font-weight: 600; }
+
+/* display:flex would otherwise beat the UA rule for [hidden], leaving an
+   invisible full-page overlay that swallows every click. */
+.drop-veil[hidden] { display: none; }
+
+.drop-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  /* Drag events are handled on window, so the veil never needs to be a target. */
+  pointer-events: none;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--page) 78%, transparent);
+  backdrop-filter: blur(2px);
+}
+.drop-card {
+  padding: 22px 34px;
+  border: 2px dashed var(--focus);
+  border-radius: 14px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-size: 15px;
+  box-shadow: var(--shadow);
+}
 
 .icon-btn {
   width: 28px;

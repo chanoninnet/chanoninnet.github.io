@@ -58,9 +58,11 @@
   // -------------------------------------------------------------------------
   // state
   // -------------------------------------------------------------------------
-  // Every month found in source/, oldest first. The newest is what opens.
-  var PERIODS = DATA.periods || [];
+  // Months baked in by tools/build_data.py, oldest first, plus anything the
+  // user has loaded through the Load Excel button (see the "loading" section).
+  var PERIODS = (DATA.periods || []).slice();
   var ALL_PERIODS = "__all__";
+  var STORE_KEY = "salesmap.loadedPeriods.v1";
 
   var state = {
     period: PERIODS.length ? PERIODS[PERIODS.length - 1].period : "",
@@ -228,12 +230,14 @@
     return b;
   }());
 
-  PERIODS.forEach(function (p) {
+  function projectPeriod(p) {
     p.customers.forEach(function (c) {
       c.wx = projX(c.lng);
       c.wy = projY(c.lat);
     });
-  });
+    return p;
+  }
+  PERIODS.forEach(projectPeriod);
 
   var R_MIN = 4, R_MAX = 30;
 
@@ -941,14 +945,16 @@
         escapeHtml(PERIODS[PERIODS.length - 1].label) + ")</option>"
       : "");
     sel.value = state.period;
-
-    sel.addEventListener("change", function () {
-      selectPeriod(sel.value);
-      state.selectedId = null;
-      fitView();
-      renderAll();
-    });
   }
+
+  // Bound once — renderPeriodSelect() re-runs whenever months are loaded, and
+  // rebinding there would stack a listener per load.
+  el("periodSelect").addEventListener("change", function (e) {
+    selectPeriod(e.target.value);
+    state.selectedId = null;
+    fitView();
+    renderAll();
+  });
 
   /** Period text that appears outside the charts. */
   function syncPeriodLabels() {
@@ -962,6 +968,189 @@
     var sel = el("periodSelect");
     if (sel && sel.value !== state.period) sel.value = state.period;
   }
+
+  // =========================================================================
+  // LOADING EXCEL IN THE PAGE
+  // Reads .xlsx files straight from the file picker or a drag-and-drop, so a
+  // new month can be added without running the Python script. Loaded months
+  // are kept in localStorage and come back on the next open.
+  // =========================================================================
+  function statusMessage(html, tone) {
+    var box = el("loadStatus");
+    box.hidden = false;
+    box.setAttribute("data-tone", tone || "info");
+    box.innerHTML = html;
+  }
+
+  function storedPeriods() {
+    try {
+      var raw = window.localStorage.getItem(STORE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /** Persist loaded months. Returns null on success, or a reason string. */
+  function persist(periods) {
+    try {
+      window.localStorage.setItem(STORE_KEY, JSON.stringify(periods.map(function (p) {
+        return {
+          period: p.period, label: p.label, source: p.source,
+          customers: p.customers.map(function (c) {
+            return { id: c.id, name: c.name, group: c.group, lat: c.lat, lng: c.lng,
+              amt: c.amt, qty: c.qty, prov: c.prov, region: c.region };
+          }),
+          unmapped: p.unmapped
+        };
+      })));
+      return null;
+    } catch (e) {
+      return e && e.name === "QuotaExceededError"
+        ? "the browser's storage is full"
+        : "this browser blocked local storage";
+    }
+  }
+
+  /** Merge months in, replacing any existing month with the same period. */
+  function registerPeriods(incoming) {
+    incoming.forEach(function (p) {
+      projectPeriod(p);
+      var at = -1;
+      for (var i = 0; i < PERIODS.length; i++) {
+        if (PERIODS[i].period === p.period) { at = i; break; }
+      }
+      if (at >= 0) PERIODS[at] = p; else PERIODS.push(p);
+    });
+    PERIODS.sort(function (a, b) { return a.period < b.period ? -1 : a.period > b.period ? 1 : 0; });
+    COMBINED = null;                                  // combined view is stale
+  }
+
+  function loadedOnly() {
+    return PERIODS.filter(function (p) { return p.loaded; });
+  }
+
+  async function handleFiles(fileList) {
+    var files = Array.prototype.slice.call(fileList || []).filter(function (f) {
+      return /\.xlsx$/i.test(f.name);
+    });
+    if (!files.length) {
+      statusMessage("No <b>.xlsx</b> files in that selection. " +
+        "Pick the QlikView export, not a .xls or .csv.", "error");
+      return;
+    }
+
+    el("loadBtn").disabled = true;
+    statusMessage("Reading " + files.length + " file" + (files.length > 1 ? "s" : "") + "…", "info");
+
+    var added = [], failed = [];
+    for (var i = 0; i < files.length; i++) {
+      try {
+        var sheet = await window.XlsxReader.readFirstSheet(files[i]);
+        var period = window.SalesIngest.toPeriod(sheet, files[i].name);
+        period.loaded = true;
+        added.push(period);
+      } catch (err) {
+        failed.push(files[i].name + " — " + (err && err.message ? err.message : String(err)));
+      }
+    }
+
+    el("loadBtn").disabled = false;
+
+    if (added.length) {
+      registerPeriods(added);
+      var newest = added.reduce(function (a, b) { return a.period > b.period ? a : b; });
+      selectPeriod(newest.period);
+      state.selectedId = null;
+      renderPeriodSelect();
+      fitView();
+      renderAll();
+    }
+
+    var lines = added.map(function (p) {
+      var total = p.customers.reduce(function (s, c) { return s + c.amt; }, 0) +
+        p.unmapped.reduce(function (s, c) { return s + c.amt; }, 0);
+      return "Loaded <b>" + escapeHtml(p.label) + "</b> — " +
+        nf0.format(p.customers.length + p.unmapped.length) + " customers, " +
+        bahtExact(total) + " total, " + nf0.format(p.unmapped.length) +
+        " without coordinates.";
+    });
+
+    if (added.length) {
+      var why = persist(loadedOnly());
+      if (why) {
+        lines.push("Kept for this session only — " + why + ".");
+      }
+      el("clearBtn").hidden = false;
+    }
+    failed.forEach(function (f) { lines.push("Could not read " + escapeHtml(f)); });
+
+    statusMessage(lines.join("\n"),
+      failed.length ? (added.length ? "warn" : "error") : "ok");
+  }
+
+  el("loadBtn").addEventListener("click", function () { el("fileInput").click(); });
+  el("fileInput").addEventListener("change", function (e) {
+    handleFiles(e.target.files);
+    e.target.value = "";                              // allow reloading the same file
+  });
+
+  el("clearBtn").addEventListener("click", function () {
+    var kept = PERIODS.filter(function (p) { return !p.loaded; });
+    if (!kept.length) {
+      statusMessage("Nothing to fall back to — the page ships with no built-in " +
+        "month, so at least one loaded file has to stay.", "error");
+      return;
+    }
+    PERIODS = kept;
+    COMBINED = null;
+    try { window.localStorage.removeItem(STORE_KEY); } catch (e) { /* nothing to undo */ }
+    selectPeriod(PERIODS[PERIODS.length - 1].period);
+    state.selectedId = null;
+    renderPeriodSelect();
+    el("clearBtn").hidden = true;
+    fitView();
+    renderAll();
+    statusMessage("Cleared the months loaded in the browser. Back to what the " +
+      "page was built with.", "info");
+  });
+
+  // Drag and drop anywhere on the page.
+  var dragDepth = 0;
+  function hasFiles(e) {
+    return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") >= 0;
+  }
+  window.addEventListener("dragenter", function (e) {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth++;
+    el("dropVeil").hidden = false;
+  });
+  window.addEventListener("dragover", function (e) { if (hasFiles(e)) e.preventDefault(); });
+  window.addEventListener("dragleave", function () {
+    if (--dragDepth <= 0) { dragDepth = 0; el("dropVeil").hidden = true; }
+  });
+  window.addEventListener("drop", function (e) {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth = 0;
+    el("dropVeil").hidden = true;
+    handleFiles(e.dataTransfer.files);
+  });
+
+  // Restore months loaded in a previous visit.
+  (function restore() {
+    var saved = storedPeriods();
+    if (!saved.length) return;
+    saved.forEach(function (p) { p.loaded = true; });
+    registerPeriods(saved);
+    el("clearBtn").hidden = false;
+    state.period = PERIODS[PERIODS.length - 1].period;
+    statusMessage("Restored " + saved.length + " month" + (saved.length > 1 ? "s" : "") +
+      " loaded earlier in this browser: <b>" +
+      escapeHtml(saved.map(function (p) { return p.label; }).join(", ")) +
+      "</b>", "info");
+  }());
 
   // Pick the period before anything reads CUR / TOTALS / MAX_AMOUNT.
   selectPeriod(state.period);

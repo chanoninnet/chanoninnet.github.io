@@ -13,10 +13,21 @@
     <h1>Sales by Customer Location</h1>
     <p class="topbar-sub">QlikView export &middot; period <strong id="periodLabel">&mdash;</strong> &middot; offline basemap, no network required</p>
   </div>
-  <button id="themeToggle" class="ghost-btn" type="button" aria-label="Switch colour theme">
-    <span data-theme-label>Dark</span>
-  </button>
+  <div class="topbar-actions">
+    <button id="loadBtn" class="primary-btn" type="button">Load Excel&hellip;</button>
+    <button id="clearBtn" class="ghost-btn" type="button" hidden>Clear loaded</button>
+    <button id="themeToggle" class="ghost-btn" type="button" aria-label="Switch colour theme">
+      <span data-theme-label>Dark</span>
+    </button>
+  </div>
+  <input id="fileInput" type="file" accept=".xlsx" multiple hidden>
 </header>
+
+<p class="load-status" id="loadStatus" role="status" hidden></p>
+
+<div class="drop-veil" id="dropVeil" hidden aria-hidden="true">
+  <div class="drop-card">Drop QlikView <b>.xlsx</b> exports to load them</div>
+</div>
 
 <section class="kpis" aria-label="Headline figures">
   <div class="kpi">
@@ -152,6 +163,8 @@
 
 <script src="data/thailand.js"></script>
 <script src="data/sales.js"></script>
+<script src="xlsx.js"></script>
+<script src="ingest.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
