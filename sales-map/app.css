@@ -114,8 +114,7 @@ h2 { font-size: 15px; }
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px 16px;
+  gap: 16px;
   margin-bottom: 18px;
 }
 .topbar-sub {
@@ -138,8 +137,7 @@ h2 { font-size: 15px; }
 .ghost-btn:hover { color: var(--text-primary); border-color: var(--axis); }
 .ghost-btn[disabled], .primary-btn[disabled] { opacity: .5; cursor: default; }
 
-/* Four buttons need to wrap rather than push past the edge on a phone. */
-.topbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; flex: none; }
 
 .primary-btn {
   padding: 6px 13px;
@@ -313,20 +311,11 @@ h2 { font-size: 15px; }
 .grid {
   display: grid;
   gap: 14px;
-  /* The map column is the narrower one: Thailand is a tall, narrow shape, and
-     a tall column is what lets it fill its card instead of floating in sea. */
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: start;
 }
-/* Region totals run the full width above the map; everything else sits beside
-   it. The right column stretches so it ends level with the tall map card, and
-   the table takes up the slack rather than leaving a ragged gap. */
-.panel-bars  { grid-column: 1 / -1; }
-.col-right   { display: flex; flex-direction: column; gap: 14px; min-width: 0; align-self: stretch; }
-.col-right .panel-table { flex: 1; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
-/* Grows to use the space the map leaves, but stays capped and scrolling — with
-   779 rows an uncapped table would run to tens of thousands of pixels. */
-.col-right .panel-table .table-wrap { flex: 1; min-height: 160px; max-height: 56vh; }
+.col-right   { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.panel-table { grid-column: 1 / -1; }
 
 @media (max-width: 940px) {
   .grid { grid-template-columns: minmax(0, 1fr); }
@@ -355,23 +344,17 @@ h2 { font-size: 15px; }
 .map-tools, .table-tools { display: flex; align-items: center; gap: 6px; flex: none; }
 
 /* --- map ------------------------------------------------------------------- */
-/* The map runs the full width of its card, edge to edge — the negative margins
-   cancel the panel padding — and is shaped close to Thailand's own proportions
-   so the land fills the stage rather than sitting in a wide band of sea. */
 .map-stage {
   position: relative;
+  border: 1px solid var(--border);
+  border-radius: 10px;
   overflow: hidden;
   background: var(--sea);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  margin: 0 -16px;
-  aspect-ratio: 5 / 8;
+  /* Thailand is a tall, narrow shape — a portrait stage wastes less sea. */
+  aspect-ratio: 5 / 7;
+  max-height: 82vh;
 }
-/* Single column: the card is now full page width, so cap the height rather
-   than let the same ratio produce a map taller than the screen. */
-@media (max-width: 940px) {
-  .map-stage { aspect-ratio: 5 / 7; max-height: 86vh; }
-}
+@media (max-width: 940px) { .map-stage { aspect-ratio: 3 / 4; } }
 
 #map {
   display: block;
@@ -539,7 +522,6 @@ h2 { font-size: 15px; }
 }
 .table-wrap {
   max-height: 430px;
-  min-width: 0;
   overflow: auto;
   border: 1px solid var(--gridline);
   border-radius: 10px;
@@ -550,7 +532,7 @@ h2 { font-size: 15px; }
   font-size: 12.5px;
 }
 .data-table th, .data-table td {
-  padding: 7px 8px;
+  padding: 7px 12px;
   text-align: left;
   border-bottom: 1px solid var(--gridline);
   white-space: nowrap;
@@ -574,10 +556,7 @@ h2 { font-size: 15px; }
 }
 .data-table thead th[aria-sort="ascending"]::after { content: "\2191"; }
 .data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
-/* The table lives in a side column now, so names truncate to keep the sales
-   figures on screen; the full name is in the row's title and the tooltip. */
-.data-table td.cust { max-width: 165px; overflow: hidden; text-overflow: ellipsis; }
-.data-table td:nth-child(2) { max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+.data-table td.cust { max-width: 340px; overflow: hidden; text-overflow: ellipsis; }
 .data-table tbody tr:hover { background: color-mix(in srgb, var(--text-primary) 4%, transparent); }
 .data-table tbody tr.is-selected { background: color-mix(in srgb, var(--focus) 14%, transparent); }
 .data-table tbody tr { cursor: pointer; }

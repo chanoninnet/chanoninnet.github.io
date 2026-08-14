@@ -19,7 +19,6 @@ Both can still be overridden:
 
     python3 tools/build_data.py <sales.xlsx> [provinces.geojson]
 """
-import datetime
 import json
 import re
 import sys
@@ -36,105 +35,14 @@ DEFAULT_GEOJSON = Path(__file__).resolve().parent / "thailand.geojson"
 MONTHS = ["January", "February", "March", "April", "May", "June",
           "July", "August", "September", "October", "November", "December"]
 
-# Header names that mean "which month is this row" — the export may or may not
-# carry one. Compared after lowercasing and stripping spaces and underscores.
-MONTH_HEADERS = {
-    "month", "months", "period", "yearmonth", "yrmonth", "ym", "yyyymm",
-    "monthid", "monthkey", "salemonth", "salesmonth", "saleperiod",
-    "salesperiod", "เดือน", "งวด", "ปีเดือน",
-}
-
-MONTH_WORDS = {}
-for _i, _name in enumerate(MONTHS):
-    MONTH_WORDS[_name.lower()] = _i + 1
-    MONTH_WORDS[_name.lower()[:3]] = _i + 1
-for _i, _th in enumerate([
-    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
-    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
-]):
-    MONTH_WORDS[_th] = _i + 1
-for _i, _th in enumerate([
-    "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
-    "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
-]):
-    MONTH_WORDS[_th] = _i + 1
-    MONTH_WORDS[_th.replace(".", "")] = _i + 1
-
-
-def normalise_year(year):
-    """Thai exports often carry the Buddhist year; 2569 means 2026."""
-    return year - 543 if year > 2400 else year
-
-
-def parse_month(value, default_year):
-    """A month cell -> (year, month), or None when it says nothing usable.
-
-    Accepts what QlikView and Excel actually produce: real dates, 202601,
-    '2026-01', '01/2026', a bare 1-12, and English or Thai month names.
-    """
-    if value is None:
-        return None
-
-    if isinstance(value, datetime.datetime) or isinstance(value, datetime.date):
-        return normalise_year(value.year), value.month
-
-    if isinstance(value, bool):
-        return None
-
-    if isinstance(value, (int, float)):
-        number = int(value)
-        if 1 <= number <= 12:
-            return default_year, number
-        if 190001 <= number <= 299912 and 1 <= number % 100 <= 12:
-            return normalise_year(number // 100), number % 100
-        return None
-
-    text = unicodedata.normalize("NFC", str(value)).strip()
-    if not text or text == "-":
-        return None
-
-    match = re.match(r"^(\d{4})\D?(\d{1,2})$", text)             # 202601, 2026-01
-    if match and 1 <= int(match.group(2)) <= 12:
-        return normalise_year(int(match.group(1))), int(match.group(2))
-
-    match = re.match(r"^(\d{1,2})\D(\d{4})$", text)              # 01/2026
-    if match and 1 <= int(match.group(1)) <= 12:
-        return normalise_year(int(match.group(2))), int(match.group(1))
-
-    match = re.match(r"^(\d{1,2})$", text)                       # 1 .. 12
-    if match and 1 <= int(match.group(1)) <= 12:
-        return default_year, int(match.group(1))
-
-    word = text.lower().rstrip(".")
-    year_in_text = re.search(r"(\d{4})", text)
-    for name, number in MONTH_WORDS.items():
-        stem = name.rstrip(".")
-        if word == stem or word.startswith(stem + " ") or word.startswith(stem + "-"):
-            year = normalise_year(int(year_in_text.group(1))) if year_in_text else default_year
-            return year, number
-
-    return None
-
 
 def period_from_name(name):
-    """The reporting period a filename declares.
-
-    Two shapes are accepted, because a QlikView export may hold one month or a
-    whole year:
-
-        ..._202607.xlsx -> ('2026-07', 'July 2026')
-        ..._2026.xlsx   -> ('2026',    'Full year 2026')
-    """
-    month = re.search(r"(20\d{2})(0[1-9]|1[0-2])(?!\d)", name)
-    if month:
-        return (month.group(1) + "-" + month.group(2),
-                MONTHS[int(month.group(2)) - 1] + " " + month.group(1))
-
-    year = re.search(r"(20\d{2})(?!\d)", name)
-    if year:
-        return year.group(1), "Full year " + year.group(1)
-
-    return "", ""
+    """('2026-07', 'July 2026') parsed out of the filename's YYYYMM stamp."""
+    match = re.search(r"(20\d{2})(0[1-9]|1[0-2])", name)
+    if not match:
+        return "", ""
+    year, month = match.group(1), int(match.group(2))
+    return year + "-" + match.group(2), MONTHS[month - 1] + " " + year
 
 
 def collect_exports(paths=None):
@@ -170,10 +78,9 @@ def collect_exports(paths=None):
 
     if undated:
         sys.exit(
-            "No period in these filenames:\n  " + "\n  ".join(undated) + "\n"
-            "Keep the QlikView filename, ending in the year or the month:\n"
-            "  Qlikview_Sales_by_Customer_Location_2026.xlsx\n"
-            "  Qlikview_Sales_by_Customer_Location_202608.xlsx"
+            "No YYYYMM period in these filenames:\n  " + "\n  ".join(undated) + "\n"
+            "Keep the QlikView filename, e.g. "
+            "Qlikview_Sales_by_Customer_Location_202608.xlsx"
         )
 
     return [(period, found[period][0], found[period][1])
@@ -357,35 +264,18 @@ def main(exports, geojson_path):
         polys = [p for p in polys if ring_area(p[0]) >= biggest * 0.004]
         provinces.append({"name": name, "polys": polys})
 
-    # ---- assign customers, one entry per period ----------------------------
-    collected = {}
+    # ---- assign customers, one entry per monthly export --------------------
+    periods = []
     for period, label, path in exports:
-        year = int(period[:4])
-        groups = read_export(path, provinces, period, label, year)
-        if len(groups) > 1:
-            print("  " + path.name + " has a month column: " +
-                  str(len(groups)) + " periods")
-        for key in sorted(groups):
-            if key in collected:
-                sys.exit(
-                    "Two exports both contain " + groups[key]["label"] + ":\n"
-                    "  " + collected[key]["source"] + "\n  " + path.name + "\n"
-                    "Keep one file per period."
-                )
-            group = groups[key]
-            group["period"] = key
-            group["source"] = path.name
-            collected[key] = group
-            report_period(group["label"], path, group["customers"],
-                          group["unmapped"], group["snapped"])
-
-    periods = [{
-        "period": key,
-        "label": collected[key]["label"],
-        "source": collected[key]["source"],
-        "customers": collected[key]["customers"],
-        "unmapped": collected[key]["unmapped"],
-    } for key in sorted(collected)]
+        customers, unmapped, outside = read_export(path, provinces)
+        periods.append({
+            "period": period,
+            "label": label,
+            "source": path.name,
+            "customers": customers,
+            "unmapped": unmapped,
+        })
+        report_period(label, path, customers, unmapped, outside)
 
     # ---- write the basemap ------------------------------------------------
     features = []
@@ -425,87 +315,22 @@ def main(exports, geojson_path):
     print(f"thailand.js {map_bytes/1024:.0f} KB   sales.js {data_bytes/1024:.0f} KB")
 
 
-COLUMN_HEADERS = {
-    "id": ("store_id", "storeid", "customerid", "custid"),
-    "name": ("store_name", "storename", "customername", "custname"),
-    "lat": ("lat", "latitude"),
-    "lng": ("lng", "lon", "long", "longitude"),
-    "group": ("salesgroup", "salegroup", "group"),
-    "amt": ("salesamt", "saleamt", "salesamount", "amount"),
-    "qty": ("salesqty", "saleqty", "salesquantity", "quantity", "qty"),
-}
-
-
-def header_index(header_row):
-    """Map our field names onto the sheet's actual column positions."""
-    seen = {}
-    for i, cell in enumerate(header_row or ()):
-        key = re.sub(r"[\s_]", "", clean_name(cell)).lower()
-        if key and key not in seen:
-            seen[key] = i
-
-    index, missing = {}, []
-    for field, names in COLUMN_HEADERS.items():
-        at = next((seen[n.replace("_", "")] for n in names
-                   if n.replace("_", "") in seen), None)
-        if at is None:
-            missing.append(names[0])
-        else:
-            index[field] = at
-    if missing:
-        sys.exit("The sheet is missing these columns: " + ", ".join(missing))
-
-    index["month"] = next((seen[n] for n in MONTH_HEADERS if n in seen), None)
-    return index
-
-
-def read_export(xlsx_path, provinces, default_period, default_label, default_year):
-    """One sheet -> {period: {label, customers, unmapped, snapped}}.
-
-    A sheet with a month column is split into one period per month; without
-    one, every row belongs to the period the filename declares.
-    """
+def read_export(xlsx_path, provinces):
+    """One month's sheet -> (mapped customers, unmapped customers, snap count)."""
     ws = openpyxl.load_workbook(xlsx_path, data_only=True)["Sheet1"]
-    rows = list(ws.iter_rows(min_row=1, values_only=True))
-    if not rows:
-        sys.exit("Empty sheet: " + xlsx_path.name)
+    rows = list(ws.iter_rows(min_row=2, values_only=True))
 
-    at = header_index(rows[0])
-    groups, unreadable_months = {}, 0
-
-    def bucket(period, label):
-        if period not in groups:
-            groups[period] = {"label": label, "customers": [], "unmapped": [],
-                              "snapped": 0}
-        return groups[period]
-
-    for row in rows[1:]:
-        store_id = row[at["id"]] if at["id"] < len(row) else None
-        if store_id is None or store_id == "":
-            continue
-
-        period, label = default_period, default_label
-        if at["month"] is not None:
-            stamp = parse_month(row[at["month"]] if at["month"] < len(row) else None,
-                                default_year)
-            if stamp:
-                period = "%04d-%02d" % stamp
-                label = MONTHS[stamp[1] - 1] + " " + str(stamp[0])
-            else:
-                unreadable_months += 1
-
-        target = bucket(period, label)
-        lat = row[at["lat"]] if at["lat"] < len(row) else None
-        lng = row[at["lng"]] if at["lng"] < len(row) else None
-        amount = float(row[at["amt"]] or 0) if at["amt"] < len(row) else 0.0
-        quantity = float(row[at["qty"]] or 0) if at["qty"] < len(row) else 0.0
-        name = clean_name(row[at["name"]] if at["name"] < len(row) else "")
-        sales_group = clean_name(row[at["group"]] if at["group"] < len(row) else "")
+    customers, unmapped, outside = [], [], 0
+    for store_id, store_name, lat, lng, group, amt, qty in rows:
+        amount = float(amt or 0)
+        quantity = float(qty or 0)
+        name = clean_name(store_name)
+        sales_group = clean_name(group)
         if sales_group == "-":
             sales_group = ""
 
         if not isinstance(lat, (int, float)) or not isinstance(lng, (int, float)):
-            target["unmapped"].append({
+            unmapped.append({
                 "id": store_id, "name": name, "group": sales_group,
                 "amt": amount, "qty": quantity,
             })
@@ -520,19 +345,16 @@ def read_export(xlsx_path, provinces, default_period, default_label, default_yea
             # Coastal customers can land just outside a simplified shoreline;
             # fall back to the nearest province centroid before giving up.
             province = nearest_province(lng, lat, provinces)
-            target["snapped"] += 1
+            outside += 1
 
-        target["customers"].append({
+        customers.append({
             "id": store_id, "name": name, "group": sales_group,
             "lat": round(float(lat), 5), "lng": round(float(lng), 5),
             "amt": amount, "qty": quantity,
             "prov": province, "region": PROVINCE_REGION[province],
         })
 
-    if unreadable_months:
-        print("  ! %d row(s) had an unreadable month and fell back to %s"
-              % (unreadable_months, default_label))
-    return groups
+    return customers, unmapped, outside
 
 
 def report_period(label, path, customers, unmapped, outside):

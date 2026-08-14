@@ -58,9 +58,8 @@
   // -------------------------------------------------------------------------
   // state
   // -------------------------------------------------------------------------
-  // Periods baked in by tools/build_data.py, oldest first, plus anything the
-  // user has loaded through Re-Load Data (see the "loading" section). A period
-  // is whatever one export covers — a single month or a whole year.
+  // Months baked in by tools/build_data.py, oldest first, plus anything the
+  // user has loaded through the Load Excel button (see the "loading" section).
   var PERIODS = (DATA.periods || []).slice();
   var ALL_PERIODS = "__all__";
   var STORE_KEY = "salesmap.loadedPeriods.v1";
@@ -75,46 +74,32 @@
     sortDir: -1
   };
 
-  /* Sum one customer across every period, keyed by ID. Identity fields come
-     from the most recent period the customer appears in, so a renamed or
+  /* Sum one customer across every month, keyed by ID. Identity fields come
+     from the most recent month the customer appears in, so a renamed or
      relocated customer shows its latest details. */
   function combineAllPeriods() {
     var mapped = {}, unmapped = {};
-
-    // A whole-year period and that year's own months would double-count each
-    // other, so when both are loaded the months win — they are the finer grain.
-    var yearsWithMonths = {};
     PERIODS.forEach(function (p) {
-      if (/^\d{4}-\d{2}$/.test(p.period)) yearsWithMonths[p.period.slice(0, 4)] = true;
-    });
-    var parts = PERIODS.filter(function (p) {
-      return !(/^\d{4}$/.test(p.period) && yearsWithMonths[p.period]);
-    });
-    var dropped = PERIODS.length - parts.length;
-
-    parts.forEach(function (p) {
       p.customers.forEach(function (c) {
         var t = mapped[c.id];
         if (!t) { mapped[c.id] = t = copyRow(c); t.amt = 0; t.qty = 0; }
         else { t.name = c.name; t.prov = c.prov; t.region = c.region; t.group = c.group; t.lat = c.lat; t.lng = c.lng; t.wx = c.wx; t.wy = c.wy; }
-        t.amt += c.amt; t.qty += c.qty; t.periods = (t.periods || 0) + 1;
+        t.amt += c.amt; t.qty += c.qty; t.months = (t.months || 0) + 1;
       });
       p.unmapped.forEach(function (u) {
         var t = unmapped[u.id];
         if (!t) { unmapped[u.id] = t = copyRow(u); t.amt = 0; t.qty = 0; }
         else { t.name = u.name; t.group = u.group; }
-        t.amt += u.amt; t.qty += u.qty; t.periods = (t.periods || 0) + 1;
+        t.amt += u.amt; t.qty += u.qty; t.months = (t.months || 0) + 1;
       });
     });
     return {
       period: ALL_PERIODS,
-      label: parts.length
-        ? "All periods (" + parts[0].label + " – " + parts[parts.length - 1].label + ")"
+      label: PERIODS.length
+        ? "All periods (" + PERIODS[0].label + " – " + PERIODS[PERIODS.length - 1].label + ")"
         : "All periods",
       shortLabel: "All periods",
-      source: parts.length + " periods",
-      parts: parts.length,
-      dropped: dropped,
+      source: PERIODS.length + " monthly exports",
       customers: Object.keys(mapped).map(function (k) { return mapped[k]; }),
       unmapped: Object.keys(unmapped).map(function (k) { return unmapped[k]; })
     };
@@ -163,8 +148,8 @@
     };
   }
 
-  /* Pin sizes are scaled within the selected period, so its biggest customer
-     always reads as the biggest pin. */
+  /* Pin sizes are scaled within the selected period, so the biggest customer
+     of the month always reads as the biggest pin. */
   function selectPeriod(periodId) {
     state.period = periodId;
     CUR = currentPeriod();
@@ -269,7 +254,7 @@
   var drawn = [];                                     // hit-test list, draw order
 
   function fitView() {
-    var padded = 0.985;                               // land nearly to the edges
+    var padded = 0.94;
     var bw = BOUNDS.x1 - BOUNDS.x0;
     var bh = BOUNDS.y1 - BOUNDS.y0;
     view.scale = Math.min(size.w / bw, size.h / bh) * padded;
@@ -434,7 +419,7 @@
       "<dt>Region</dt><dd><span class=\"tip-region\">" + escapeHtml(c.region) + "</span></dd>" +
       "<dt>Group</dt><dd>" + (c.group ? escapeHtml(c.group) : "—") + "</dd>" +
       (state.period === ALL_PERIODS
-        ? "<dt>Periods</dt><dd>" + c.periods + " of " + (CUR.parts || PERIODS.length) + "</dd>" : "") +
+        ? "<dt>Months</dt><dd>" + c.months + " of " + PERIODS.length + "</dd>" : "") +
       "<dt>ID</dt><dd>" + c.id + "</dd>" +
       "</dl>";
 
@@ -943,15 +928,15 @@
   }
 
   // --- period ---------------------------------------------------------------
-  // Periods come from the filenames in source/, so a new export needs no code
-  // change: it simply appears as another option here.
+  // Periods come from the filenames in source/, so adding a month needs no
+  // code change: the new export simply appears as another option here.
   function renderPeriodSelect() {
     if (!PERIODS.length) return;
     var sel = el("periodSelect");
     el("periodGroup").hidden = false;
 
-    // Newest first — that is the one people reach for. "All periods" only
-    // means something once a second export has been added to source/.
+    // Newest first — that is the month people reach for. "All periods" only
+    // means something once a second month has been added to source/.
     sel.innerHTML = PERIODS.slice().reverse().map(function (p) {
       return '<option value="' + p.period + '">' + escapeHtml(p.label) + "</option>";
     }).join("") + (PERIODS.length > 1
@@ -962,7 +947,7 @@
     sel.value = state.period;
   }
 
-  // Bound once — renderPeriodSelect() re-runs whenever periods are loaded, and
+  // Bound once — renderPeriodSelect() re-runs whenever months are loaded, and
   // rebinding there would stack a listener per load.
   el("periodSelect").addEventListener("change", function (e) {
     selectPeriod(e.target.value);
@@ -977,10 +962,9 @@
     el("periodLabel").textContent = label;
     el("sourceName").textContent = CUR.source || "";
     if (label) document.title = "Sales by Customer Location — " + label;
-    var scope = PERIODS.length > 1 ? (CUR.label || "the period") : (label || "the period");
-    el("barsSub").textContent = "Total across all customers in " + scope + "." +
-      (CUR.dropped ? " The whole-year total is left out here, so its own months are" +
-        " not counted twice." : "");
+    el("barsSub").textContent = PERIODS.length > 1
+      ? "Total across all customers in " + (CUR.label || "the period") + "."
+      : "Total across all customers in " + (label || "the period") + ".";
     var sel = el("periodSelect");
     if (sel && sel.value !== state.period) sel.value = state.period;
   }
@@ -988,7 +972,7 @@
   // =========================================================================
   // LOADING EXCEL IN THE PAGE
   // Reads .xlsx files straight from the file picker or a drag-and-drop, so a
-  // new export can be added without running the Python script. Loaded periods
+  // new month can be added without running the Python script. Loaded months
   // are kept in localStorage and come back on the next open.
   // =========================================================================
   function statusMessage(html, tone) {
@@ -1007,11 +991,8 @@
     }
   }
 
-  /** Persist loaded periods. Returns null on success, or a reason string. */
+  /** Persist loaded months. Returns null on success, or a reason string. */
   function persist(periods) {
-    // On a served page the `source` folder is re-read on every open, so a
-    // stored copy would only ever be a staler duplicate of it.
-    if (window.SourceFolder.overHttp) return null;
     try {
       window.localStorage.setItem(STORE_KEY, JSON.stringify(periods.map(function (p) {
         return {
@@ -1031,7 +1012,7 @@
     }
   }
 
-  /** Merge periods in, replacing any existing one with the same key. */
+  /** Merge months in, replacing any existing month with the same period. */
   function registerPeriods(incoming) {
     incoming.forEach(function (p) {
       projectPeriod(p);
@@ -1049,7 +1030,7 @@
     return PERIODS.filter(function (p) { return p.loaded; });
   }
 
-  async function handleFiles(fileList, fromFolder, extraNote) {
+  async function handleFiles(fileList) {
     var files = Array.prototype.slice.call(fileList || []).filter(function (f) {
       return /\.xlsx$/i.test(f.name);
     });
@@ -1066,11 +1047,9 @@
     for (var i = 0; i < files.length; i++) {
       try {
         var sheet = await window.XlsxReader.readFirstSheet(files[i]);
-        // A sheet with a month column yields one period per month.
-        window.SalesIngest.toPeriods(sheet, files[i].name).forEach(function (period) {
-          period.loaded = true;
-          added.push(period);
-        });
+        var period = window.SalesIngest.toPeriod(sheet, files[i].name);
+        period.loaded = true;
+        added.push(period);
       } catch (err) {
         failed.push(files[i].name + " — " + (err && err.message ? err.message : String(err)));
       }
@@ -1103,141 +1082,75 @@
         lines.push("Kept for this session only — " + why + ".");
       }
       el("clearBtn").hidden = false;
-      if (fromFolder) {
-        lines.unshift("Re-loaded " + added.length + " period" +
-          (added.length > 1 ? "s" : "") + " from <b>" + escapeHtml(fromFolder) + "</b>:");
-      }
     }
     failed.forEach(function (f) { lines.push("Could not read " + escapeHtml(f)); });
 
-    statusMessage(lines.join("\n") + (extraNote || ""),
-      failed.length || extraNote ? (added.length ? "warn" : "error") : "ok");
+    statusMessage(lines.join("\n"),
+      failed.length ? (added.length ? "warn" : "error") : "ok");
   }
 
-  // --- Re-Load Data ---------------------------------------------------------
-  // Always the fixed `source` folder beside the page, always files named
-  // Qlikview_Sales_by_Customer_Location_*.xlsx. Served over http(s) that needs
-  // no interaction at all; from a file:// page the folder has to be granted
-  // once, because a browser will not let a script read an ungranted path.
-  var SF = window.SourceFolder;
-  var fileHandles = null;
-
-  function namePattern() {
-    return "<b>" + SF.prefix + "YYYY.xlsx</b>";
-  }
-
-  function reportUndated(names) {
-    if (!names || !names.length) return "";
-    return "\nSkipped (no year or month in the name): " + escapeHtml(names.join(", "));
-  }
-
-  /** Read `source/` over http(s) — no dialog, nothing to grant. */
-  async function reloadOverHttp(quiet) {
-    if (!quiet) statusMessage("Reading " + namePattern() + "…", "info");
-    var files;
-    try {
-      files = await SF.fetchAll();
-    } catch (err) {
-      statusMessage("Could not read the <b>" + SF.dir + "</b> folder — " +
-        escapeHtml(err && err.message ? err.message : String(err)), "error");
-      return;
-    }
-    if (!files.length) {
-      if (!quiet) {
-        statusMessage("No exports found. Put them in the <b>" + SF.dir +
-          "</b> folder next to this page, named " + namePattern() + ".", "warn");
-      } else {
-        el("loadStatus").hidden = true;
-      }
-      return;
-    }
-    await handleFiles(files, SF.dir);
-  }
-
-  async function reloadData() {
-    if (SF.overHttp) { await reloadOverHttp(false); return; }
-    // A workbook already chosen re-reads silently; otherwise ask which one.
-    if (fileHandles && await loadFromHandles(fileHandles, true)) return;
-    if (!fileHandles) await chooseFile();
-  }
-
-  function serveHint() {
-    return "For loading with nothing to choose, run <b>start-dashboard.bat</b> " +
-      "(Windows) or <b>start-dashboard.sh</b> (Mac/Linux) from the sales-map " +
-      "folder — served that way the page reads <b>" + SF.dir +
-      "/</b> by itself.";
-  }
-
-  /** Open the file picker and load whatever is chosen. */
-  async function chooseFile() {
-    if (!SF.canPick) { el("fileInput").click(); return; }   // Firefox / Safari
-
-    var handles;
-    try {
-      handles = await SF.pickFiles();
-    } catch (err) {
-      if (err && err.name === "AbortError") {
-        statusMessage("Nothing chosen. Pick <b>" + escapeHtml(SF.suggested) +
-          "</b> — or any " + namePattern() + ".\n" + serveHint(), "info");
-      } else {
-        // Should not happen for a file the user pointed at, but never dead-end.
-        statusMessage("The file picker could not open — " +
-          escapeHtml(err && err.message ? err.message : String(err)) +
-          "\nFalling back to the basic picker.", "warn");
-        el("fileInput").click();
-      }
-      return;
-    }
-    if (!handles || !handles.length) return;
-
-    fileHandles = handles;
-    await SF.remember(handles);
-    await loadFromHandles(handles, true);
-  }
-
-  /** Re-read the remembered workbook(s) — no dialog once one has been chosen. */
-  async function loadFromHandles(handles, interactive) {
-    var files;
-    try {
-      files = await SF.readRemembered(handles, interactive);
-    } catch (err) {
-      statusMessage("Could not re-read the chosen file — " +
-        escapeHtml(err && err.message ? err.message : String(err)) +
-        "\nIt may have been moved or renamed; choose it again.", "error");
-      return false;
-    }
-    if (!files) {
-      if (interactive) {
-        statusMessage("The browser would not re-open the chosen file. " +
-          "Choose it again with <b>Choose File…</b>", "error");
-      }
-      return false;
-    }
-    await handleFiles(files, files.length === 1 ? files[0].name : files.length + " files");
-    return true;
-  }
-
-  el("loadBtn").addEventListener("click", function () { reloadData(); });
-  el("chooseBtn").addEventListener("click", function () { chooseFile(); });
-
+  el("loadBtn").addEventListener("click", function () { el("fileInput").click(); });
   el("fileInput").addEventListener("change", function (e) {
     handleFiles(e.target.files);
     e.target.value = "";                              // allow reloading the same file
   });
 
-  // Load on open, without anything to choose.
-  if (SF.overHttp) {
-    // Served: the page can read `source/` on its own.
-    reloadOverHttp(true);
-  } else if (SF.canPick) {
-    SF.recall().then(async function (handles) {
-      if (!handles || !handles.length) return;
-      fileHandles = handles;
-      // Only when the browser kept permission on the chosen file — asking
-      // would need a click, and a prompt on page open is the wrong greeting.
-      if (await SF.readRemembered(handles, false)) await loadFromHandles(handles, false);
-    });
+  el("clearBtn").addEventListener("click", function () {
+    var kept = PERIODS.filter(function (p) { return !p.loaded; });
+    if (!kept.length) {
+      statusMessage("Nothing to fall back to — the page ships with no built-in " +
+        "month, so at least one loaded file has to stay.", "error");
+      return;
+    }
+    PERIODS = kept;
+    COMBINED = null;
+    try { window.localStorage.removeItem(STORE_KEY); } catch (e) { /* nothing to undo */ }
+    selectPeriod(PERIODS[PERIODS.length - 1].period);
+    state.selectedId = null;
+    renderPeriodSelect();
+    el("clearBtn").hidden = true;
+    fitView();
+    renderAll();
+    statusMessage("Cleared the months loaded in the browser. Back to what the " +
+      "page was built with.", "info");
+  });
+
+  // Drag and drop anywhere on the page.
+  var dragDepth = 0;
+  function hasFiles(e) {
+    return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") >= 0;
   }
+  window.addEventListener("dragenter", function (e) {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth++;
+    el("dropVeil").hidden = false;
+  });
+  window.addEventListener("dragover", function (e) { if (hasFiles(e)) e.preventDefault(); });
+  window.addEventListener("dragleave", function () {
+    if (--dragDepth <= 0) { dragDepth = 0; el("dropVeil").hidden = true; }
+  });
+  window.addEventListener("drop", function (e) {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth = 0;
+    el("dropVeil").hidden = true;
+    handleFiles(e.dataTransfer.files);
+  });
+
+  // Restore months loaded in a previous visit.
+  (function restore() {
+    var saved = storedPeriods();
+    if (!saved.length) return;
+    saved.forEach(function (p) { p.loaded = true; });
+    registerPeriods(saved);
+    el("clearBtn").hidden = false;
+    state.period = PERIODS[PERIODS.length - 1].period;
+    statusMessage("Restored " + saved.length + " month" + (saved.length > 1 ? "s" : "") +
+      " loaded earlier in this browser: <b>" +
+      escapeHtml(saved.map(function (p) { return p.label; }).join(", ")) +
+      "</b>", "info");
+  }());
 
   // Pick the period before anything reads CUR / TOTALS / MAX_AMOUNT.
   selectPeriod(state.period);
