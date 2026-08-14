@@ -71,6 +71,17 @@
 
 <main class="grid">
 
+  <section class="panel panel-bars" aria-labelledby="barsTitle">
+    <div class="panel-head">
+      <div>
+        <h2 id="barsTitle">Sales amount by region</h2>
+        <p class="panel-sub" id="barsSub">Total across all customers in the period.</p>
+      </div>
+    </div>
+    <svg id="barChart" class="bar-chart" role="img" aria-labelledby="barsTitle"></svg>
+    <div class="bar-foot" id="barFoot"></div>
+  </section>
+
   <section class="panel panel-map" aria-labelledby="mapTitle">
     <div class="panel-head">
       <div>
@@ -98,17 +109,6 @@
   </section>
 
   <div class="col-right">
-  <section class="panel panel-bars" aria-labelledby="barsTitle">
-    <div class="panel-head">
-      <div>
-        <h2 id="barsTitle">Sales amount by region</h2>
-        <p class="panel-sub" id="barsSub">Total across all customers in the period.</p>
-      </div>
-    </div>
-    <svg id="barChart" class="bar-chart" role="img" aria-labelledby="barsTitle"></svg>
-    <div class="bar-foot" id="barFoot"></div>
-  </section>
-
   <section class="panel panel-prov" aria-labelledby="provTitle">
     <div class="panel-head">
       <div>
@@ -119,7 +119,6 @@
     <svg id="provChart" class="bar-chart" role="img" aria-labelledby="provTitle"></svg>
     <div class="bar-foot" id="provFoot"></div>
   </section>
-  </div>
 
   <section class="panel panel-table" aria-labelledby="tableTitle">
     <div class="panel-head">
@@ -151,6 +150,7 @@
     </div>
     <div class="table-foot" id="tableFoot"></div>
   </section>
+  </div>
 
 </main>
 
