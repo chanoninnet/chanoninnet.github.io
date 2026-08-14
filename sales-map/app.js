@@ -58,8 +58,9 @@
   // -------------------------------------------------------------------------
   // state
   // -------------------------------------------------------------------------
-  // Months baked in by tools/build_data.py, oldest first, plus anything the
-  // user has loaded through the Load Excel button (see the "loading" section).
+  // Periods baked in by tools/build_data.py, oldest first, plus anything the
+  // user has loaded through Re-Load Data (see the "loading" section). A period
+  // is whatever one export covers — a single month or a whole year.
   var PERIODS = (DATA.periods || []).slice();
   var ALL_PERIODS = "__all__";
   var STORE_KEY = "salesmap.loadedPeriods.v1";
@@ -74,8 +75,8 @@
     sortDir: -1
   };
 
-  /* Sum one customer across every month, keyed by ID. Identity fields come
-     from the most recent month the customer appears in, so a renamed or
+  /* Sum one customer across every period, keyed by ID. Identity fields come
+     from the most recent period the customer appears in, so a renamed or
      relocated customer shows its latest details. */
   function combineAllPeriods() {
     var mapped = {}, unmapped = {};
@@ -84,13 +85,13 @@
         var t = mapped[c.id];
         if (!t) { mapped[c.id] = t = copyRow(c); t.amt = 0; t.qty = 0; }
         else { t.name = c.name; t.prov = c.prov; t.region = c.region; t.group = c.group; t.lat = c.lat; t.lng = c.lng; t.wx = c.wx; t.wy = c.wy; }
-        t.amt += c.amt; t.qty += c.qty; t.months = (t.months || 0) + 1;
+        t.amt += c.amt; t.qty += c.qty; t.periods = (t.periods || 0) + 1;
       });
       p.unmapped.forEach(function (u) {
         var t = unmapped[u.id];
         if (!t) { unmapped[u.id] = t = copyRow(u); t.amt = 0; t.qty = 0; }
         else { t.name = u.name; t.group = u.group; }
-        t.amt += u.amt; t.qty += u.qty; t.months = (t.months || 0) + 1;
+        t.amt += u.amt; t.qty += u.qty; t.periods = (t.periods || 0) + 1;
       });
     });
     return {
@@ -99,7 +100,7 @@
         ? "All periods (" + PERIODS[0].label + " – " + PERIODS[PERIODS.length - 1].label + ")"
         : "All periods",
       shortLabel: "All periods",
-      source: PERIODS.length + " monthly exports",
+      source: PERIODS.length + " exports",
       customers: Object.keys(mapped).map(function (k) { return mapped[k]; }),
       unmapped: Object.keys(unmapped).map(function (k) { return unmapped[k]; })
     };
@@ -148,8 +149,8 @@
     };
   }
 
-  /* Pin sizes are scaled within the selected period, so the biggest customer
-     of the month always reads as the biggest pin. */
+  /* Pin sizes are scaled within the selected period, so its biggest customer
+     always reads as the biggest pin. */
   function selectPeriod(periodId) {
     state.period = periodId;
     CUR = currentPeriod();
@@ -419,7 +420,7 @@
       "<dt>Region</dt><dd><span class=\"tip-region\">" + escapeHtml(c.region) + "</span></dd>" +
       "<dt>Group</dt><dd>" + (c.group ? escapeHtml(c.group) : "—") + "</dd>" +
       (state.period === ALL_PERIODS
-        ? "<dt>Months</dt><dd>" + c.months + " of " + PERIODS.length + "</dd>" : "") +
+        ? "<dt>Periods</dt><dd>" + c.periods + " of " + PERIODS.length + "</dd>" : "") +
       "<dt>ID</dt><dd>" + c.id + "</dd>" +
       "</dl>";
 
@@ -928,15 +929,15 @@
   }
 
   // --- period ---------------------------------------------------------------
-  // Periods come from the filenames in source/, so adding a month needs no
-  // code change: the new export simply appears as another option here.
+  // Periods come from the filenames in source/, so a new export needs no code
+  // change: it simply appears as another option here.
   function renderPeriodSelect() {
     if (!PERIODS.length) return;
     var sel = el("periodSelect");
     el("periodGroup").hidden = false;
 
-    // Newest first — that is the month people reach for. "All periods" only
-    // means something once a second month has been added to source/.
+    // Newest first — that is the one people reach for. "All periods" only
+    // means something once a second export has been added to source/.
     sel.innerHTML = PERIODS.slice().reverse().map(function (p) {
       return '<option value="' + p.period + '">' + escapeHtml(p.label) + "</option>";
     }).join("") + (PERIODS.length > 1
@@ -947,7 +948,7 @@
     sel.value = state.period;
   }
 
-  // Bound once — renderPeriodSelect() re-runs whenever months are loaded, and
+  // Bound once — renderPeriodSelect() re-runs whenever periods are loaded, and
   // rebinding there would stack a listener per load.
   el("periodSelect").addEventListener("change", function (e) {
     selectPeriod(e.target.value);
@@ -972,7 +973,7 @@
   // =========================================================================
   // LOADING EXCEL IN THE PAGE
   // Reads .xlsx files straight from the file picker or a drag-and-drop, so a
-  // new month can be added without running the Python script. Loaded months
+  // new export can be added without running the Python script. Loaded periods
   // are kept in localStorage and come back on the next open.
   // =========================================================================
   function statusMessage(html, tone) {
@@ -991,7 +992,7 @@
     }
   }
 
-  /** Persist loaded months. Returns null on success, or a reason string. */
+  /** Persist loaded periods. Returns null on success, or a reason string. */
   function persist(periods) {
     // On a served page the `source` folder is re-read on every open, so a
     // stored copy would only ever be a staler duplicate of it.
@@ -1015,7 +1016,7 @@
     }
   }
 
-  /** Merge months in, replacing any existing month with the same period. */
+  /** Merge periods in, replacing any existing one with the same key. */
   function registerPeriods(incoming) {
     incoming.forEach(function (p) {
       projectPeriod(p);
@@ -1086,7 +1087,7 @@
       }
       el("clearBtn").hidden = false;
       if (fromFolder) {
-        lines.unshift("Re-loaded " + added.length + " month" +
+        lines.unshift("Re-loaded " + added.length + " period" +
           (added.length > 1 ? "s" : "") + " from <b>" + escapeHtml(fromFolder) + "</b>:");
       }
     }
@@ -1110,7 +1111,7 @@
 
   function reportUndated(names) {
     if (!names || !names.length) return "";
-    return "\nSkipped (no YYYYMM month in the name): " + escapeHtml(names.join(", "));
+    return "\nSkipped (no year or month in the name): " + escapeHtml(names.join(", "));
   }
 
   /** Read `source/` over http(s) — no dialog, nothing to grant. */
@@ -1247,7 +1248,7 @@
     var kept = PERIODS.filter(function (p) { return !p.loaded; });
     if (!kept.length) {
       statusMessage("Nothing to fall back to — the page ships with no built-in " +
-        "month, so at least one loaded file has to stay.", "error");
+        "period, so at least one loaded file has to stay.", "error");
       return;
     }
     PERIODS = kept;
@@ -1259,7 +1260,7 @@
     el("clearBtn").hidden = true;
     fitView();
     renderAll();
-    statusMessage("Cleared the months loaded in the browser. Back to what the " +
+    statusMessage("Cleared the periods loaded in the browser. Back to what the " +
       "page was built with.", "info");
   });
 
@@ -1286,7 +1287,7 @@
     handleFiles(e.dataTransfer.files);
   });
 
-  // Restore months loaded in a previous visit.
+  // Restore periods loaded in a previous visit.
   (function restore() {
     if (window.SourceFolder.overHttp) return;         // the folder is authoritative
     var saved = storedPeriods();
@@ -1295,7 +1296,7 @@
     registerPeriods(saved);
     el("clearBtn").hidden = false;
     state.period = PERIODS[PERIODS.length - 1].period;
-    statusMessage("Restored " + saved.length + " month" + (saved.length > 1 ? "s" : "") +
+    statusMessage("Restored " + saved.length + " period" + (saved.length > 1 ? "s" : "") +
       " loaded earlier in this browser: <b>" +
       escapeHtml(saved.map(function (p) { return p.label; }).join(", ")) +
       "</b>", "info");

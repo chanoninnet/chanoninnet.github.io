@@ -84,14 +84,25 @@ window.SalesIngest = (function () {
     return best;
   }
 
-  /** ('2026-07', 'July 2026') from the YYYYMM stamp in the filename. */
+  /**
+   * The reporting period a filename declares. A QlikView export may hold one
+   * month or a whole year, so both endings are accepted:
+   *
+   *     ..._202607.xlsx -> 2026-07, "July 2026"
+   *     ..._2026.xlsx   -> 2026,    "Full year 2026"
+   */
   function periodFromName(filename) {
-    var m = /(20\d{2})(0[1-9]|1[0-2])/.exec(filename || "");
-    if (!m) return null;
-    return {
-      period: m[1] + "-" + m[2],
-      label: MONTHS[parseInt(m[2], 10) - 1] + " " + m[1]
-    };
+    var name = filename || "";
+    var month = /(20\d{2})(0[1-9]|1[0-2])(?!\d)/.exec(name);
+    if (month) {
+      return {
+        period: month[1] + "-" + month[2],
+        label: MONTHS[parseInt(month[2], 10) - 1] + " " + month[1]
+      };
+    }
+    var year = /(20\d{2})(?!\d)/.exec(name);
+    if (year) return { period: year[1], label: "Full year " + year[1] };
+    return null;
   }
 
   function clean(value) {
@@ -126,9 +137,10 @@ window.SalesIngest = (function () {
   function toPeriod(sheet, filename) {
     var stamp = periodFromName(filename);
     if (!stamp) {
-      throw new Error("No YYYYMM month in the filename “" + filename +
-        "”. Keep the QlikView name, e.g. " +
-        "Qlikview_Sales_by_Customer_Location_202608.xlsx");
+      throw new Error("No year or month in the filename “" + filename +
+        "”. Keep the QlikView name, ending in the period: " +
+        "Qlikview_Sales_by_Customer_Location_2026.xlsx or " +
+        "..._202608.xlsx");
     }
 
     var rows = sheet.rows || [];

@@ -1,7 +1,7 @@
 # Sales by Customer Location — offline dashboard
 
 An offline map + bar chart dashboard built from the QlikView export
-`Qlikview_Sales_by_Customer_Location_202607.xlsx` (period **July 2026**).
+`Qlikview_Sales_by_Customer_Location_2026.xlsx` (period **Full year 2026**).
 
 **Double-click `start-dashboard.bat`** (Windows) or run `./start-dashboard.sh`
 (Mac/Linux) and the dashboard opens with the months already loaded. Opening
@@ -23,8 +23,8 @@ One pin per geocoded customer, placed at its latitude/longitude.
 - Pan by dragging, zoom with the wheel or the `+` / `−` / `Fit` buttons. Hover a
   pin for its full detail; click one to pin the selection and highlight it in
   the table.
-- The two customers with a **negative** amount (a credit or return) are drawn as
-  dashed outlines rather than filled circles, so they cannot be misread as volume.
+- Customers with a **negative** amount (a credit or return) are drawn as dashed
+  outlines rather than filled circles, so they cannot be misread as volume.
 
 **2. Sales amount by region**
 Horizontal bars with the value and share labelled directly on each bar. Clicking
@@ -38,7 +38,7 @@ Statistical Office): North, Northeast, Central and South. Each customer's region
 is derived from its coordinates by point-in-polygon against the province
 boundaries — the source export has no region column of its own (`SalesGroup`
 holds 25 sales-team codes such as `FD1`, `B21`, `20`, which is far too many to
-colour, and 70 of its rows are blank).
+colour, and 129 of its rows are blank).
 
 Four is also the ceiling the colour system allows here: on a bubble map any two
 pins can end up side by side, so the palette has to stay distinguishable across
@@ -49,17 +49,17 @@ ranking moves.
 
 ## Data caveat — read this before using the map
 
-**79 of the 522 customers have no coordinates in the export** (`-` in the `Lat` /
-`Lng` columns). Between them they account for **฿154.8M — 46.8% of total sales**,
-including the single largest customer at ฿29.0M.
+**146 of the 779 customers have no coordinates in the export** (`-` in the `Lat` /
+`Lng` columns). Between them they account for **฿979.2M — 42.2% of total sales**,
+including the single largest customer at ฿128.7M.
 
 They therefore cannot appear on the map at all. Rather than hide the gap, the
 dashboard states it in a KPI tile, gives it its own neutral-grey row in the bar
 chart, and includes those customers in the table with a "no coordinates" tag.
-**The map shows just over half of the money.** Geocoding those 79 customers in
-the source system is what would make it whole.
+**The map shows well under two-thirds of the money.** Geocoding those 146
+customers in the source system is what would make it whole.
 
-Two customers carry a negative sales amount (−฿9,768 and −฿323.70).
+Four customers carry a negative sales amount (−฿24.12 to −฿9,250).
 
 ## Files
 
@@ -72,9 +72,9 @@ app.js                  canvas map, charts, filters, table, Excel loading
 xlsx.js                 minimal in-browser .xlsx reader (no libraries)
 ingest.js               sheet -> customers + regions, the browser twin of the script
 folder.js               finds the exports in the fixed source/ folder
-source/                 >>> put the monthly .xlsx export here <<<
+source/                 >>> put the QlikView .xlsx export here <<<
 data/thailand.js        simplified province polygons  (~142 KB)
-data/sales.js           522 customers, region-assigned (~79 KB)
+data/sales.js           779 customers, region-assigned (~116 KB)
 tools/build_data.py     regenerates both data files from the .xlsx
 tools/thailand.geojson  full-resolution province boundaries (build input)
 ```
@@ -82,15 +82,15 @@ tools/thailand.geojson  full-resolution province boundaries (build input)
 `data/` is generated — never edit those two files by hand; re-run the script
 instead.
 
-## Loading a month: two ways
+## Loading data: two ways
 
 **The quick way — the `source` folder and the Re-Load Data button.**
 
 The dashboard reads one fixed folder, `source/`, and one fixed filename shape:
 
 ```
-sales-map/source/Qlikview_Sales_by_Customer_Location_202607.xlsx
-sales-map/source/Qlikview_Sales_by_Customer_Location_202608.xlsx
+sales-map/source/Qlikview_Sales_by_Customer_Location_2026.xlsx      -> Full year 2026
+sales-map/source/Qlikview_Sales_by_Customer_Location_202608.xlsx    -> August 2026
 ```
 
 **The page loads these by itself when it opens** — the button is only there to
@@ -99,8 +99,15 @@ table below where the browser will not allow reading on its own.
 
 Each file becomes an entry in the **Period** dropdown. Loading a month that is
 already present replaces it, so re-loading after a corrected export just updates
-it. Excel `~$` lock files, files with any other name, and files with no `YYYYMM`
-are skipped — the last of those is reported so a typo does not pass unnoticed.
+it. Excel `~$` lock files, files with any other name, and files with no year or
+month are skipped — the last of those is reported so a typo does not pass
+unnoticed.
+
+**A year export cannot be split into months.** Its sheet holds one row per
+customer with that customer's whole-year total and no month column, so
+*Full year 2026* is a single period. To compare months you need either one file
+per month (`..._202601.xlsx`, `..._202602.xlsx`, …) or a month column added to
+the export.
 
 ### Start it this way
 
@@ -149,7 +156,7 @@ with the script; everything else matches exactly.
 **The permanent way — the build script.** Use this for months that should ship
 with the dashboard for everyone.
 
-## Monthly refresh with the script — where the Excel file goes
+## Refreshing with the script — where the Excel file goes
 
 Put the new QlikView export in **`source/`**, keeping the filename QlikView
 gives it, then run the script with no arguments:
@@ -162,8 +169,8 @@ python3 tools/build_data.py
 
 ```
 sales-map/source/
-├── Qlikview_Sales_by_Customer_Location_202607.xlsx
-├── Qlikview_Sales_by_Customer_Location_202608.xlsx   ← drop each new month here
+├── Qlikview_Sales_by_Customer_Location_2026.xlsx     ← a whole year, or
+├── Qlikview_Sales_by_Customer_Location_202608.xlsx   ← one file per month
 └── Qlikview_Sales_by_Customer_Location_202609.xlsx
 ```
 
@@ -173,20 +180,20 @@ filter. Nothing in the code or the HTML needs editing for a new month: the
 period list, the heading, the page title and the chart subtitle all follow the
 files on disk.
 
-The `YYYYMM` in each filename is what identifies the month, so the filename
-matters. Two files claiming the same month, or a filename with no `YYYYMM`, stop
-the build with an explanatory message rather than producing a silently wrong
-dashboard.
+The period at the end of each filename is what identifies it — `2026` for a
+whole year, `202608` for a single month — so the filename matters. Two files
+claiming the same period, or a filename with neither, stop the build with an
+explanatory message rather than producing a silently wrong dashboard.
 
 Every run prints a per-month, per-region summary so totals can be reconciled
 against QlikView:
 
 ```
-July 2026  (Qlikview_Sales_by_Customer_Location_202607.xlsx)
-  customers mapped   : 443
-  customers unmapped : 79
-  total sales        : 330,695,503.82
-    North        68 customers        9,198,044.00
+Full year 2026  (Qlikview_Sales_by_Customer_Location_2026.xlsx)
+  customers mapped   : 633
+  customers unmapped : 146
+  total sales        : 2,319,797,873.84
+    North       109 customers       85,225,051.34
     ...
 ```
 

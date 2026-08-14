@@ -24,7 +24,8 @@ window.SourceFolder = (function () {
   var DIR = "source";
   var PREFIX = "Qlikview_Sales_by_Customer_Location_";
   var NAME = /^Qlikview_Sales_by_Customer_Location_.*\.xlsx$/i;
-  var PERIOD = /(20\d{2})(0[1-9]|1[0-2])/;
+  // A whole-year export (..._2026.xlsx) or a single month (..._202607.xlsx).
+  var PERIOD = /(20\d{2})((0[1-9]|1[0-2])(?!\d)|(?!\d))/;
 
   var DB_NAME = "salesmap";
   var STORE = "handles";
@@ -71,11 +72,16 @@ window.SourceFolder = (function () {
     return names.length ? names : null;
   }
 
-  /** The months to try when the server will not list the folder. */
-  function candidateMonths(back) {
+  /**
+   * The period stamps to try when the server will not list the folder: recent
+   * whole years first, since a year export covers the most ground, then the
+   * recent months.
+   */
+  function candidateStamps(yearsBack, monthsBack) {
     var now = new Date();
     var out = [];
-    for (var i = -1; i < back; i++) {                 // one ahead, then backwards
+    for (var y = 0; y <= yearsBack; y++) out.push(String(now.getFullYear() - y));
+    for (var i = -1; i < monthsBack; i++) {           // one ahead, then backwards
       var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       var mm = d.getMonth() + 1;
       out.push(String(d.getFullYear()) + (mm < 10 ? "0" + mm : String(mm)));
@@ -99,9 +105,9 @@ window.SourceFolder = (function () {
       if (got.length) return sortByName(got);
     }
     // GitHub Pages and friends serve no listing, so there is nothing to read
-    // but the names themselves: ask for the last two years of months by name.
+    // but the names themselves: ask for recent years and months by name.
     // Anything older than that belongs in a build, not in a probe.
-    var probed = await Promise.all(candidateMonths(24).map(function (stamp) {
+    var probed = await Promise.all(candidateStamps(4, 24).map(function (stamp) {
       return fetchExport(PREFIX + stamp + ".xlsx");
     }));
     return sortByName(probed.filter(Boolean));

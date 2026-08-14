@@ -37,12 +37,24 @@ MONTHS = ["January", "February", "March", "April", "May", "June",
 
 
 def period_from_name(name):
-    """('2026-07', 'July 2026') parsed out of the filename's YYYYMM stamp."""
-    match = re.search(r"(20\d{2})(0[1-9]|1[0-2])", name)
-    if not match:
-        return "", ""
-    year, month = match.group(1), int(match.group(2))
-    return year + "-" + match.group(2), MONTHS[month - 1] + " " + year
+    """The reporting period a filename declares.
+
+    Two shapes are accepted, because a QlikView export may hold one month or a
+    whole year:
+
+        ..._202607.xlsx -> ('2026-07', 'July 2026')
+        ..._2026.xlsx   -> ('2026',    'Full year 2026')
+    """
+    month = re.search(r"(20\d{2})(0[1-9]|1[0-2])(?!\d)", name)
+    if month:
+        return (month.group(1) + "-" + month.group(2),
+                MONTHS[int(month.group(2)) - 1] + " " + month.group(1))
+
+    year = re.search(r"(20\d{2})(?!\d)", name)
+    if year:
+        return year.group(1), "Full year " + year.group(1)
+
+    return "", ""
 
 
 def collect_exports(paths=None):
@@ -78,9 +90,10 @@ def collect_exports(paths=None):
 
     if undated:
         sys.exit(
-            "No YYYYMM period in these filenames:\n  " + "\n  ".join(undated) + "\n"
-            "Keep the QlikView filename, e.g. "
-            "Qlikview_Sales_by_Customer_Location_202608.xlsx"
+            "No period in these filenames:\n  " + "\n  ".join(undated) + "\n"
+            "Keep the QlikView filename, ending in the year or the month:\n"
+            "  Qlikview_Sales_by_Customer_Location_2026.xlsx\n"
+            "  Qlikview_Sales_by_Customer_Location_202608.xlsx"
         )
 
     return [(period, found[period][0], found[period][1])
