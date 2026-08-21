@@ -167,7 +167,8 @@
       String(row.id).indexOf(q) !== -1 ||
       (row.prov || "").toLowerCase().indexOf(q) !== -1 ||
       (DATA.provinceTh[row.prov] || "").indexOf(state.rawQuery || q) !== -1 ||
-      (row.group || "").toLowerCase().indexOf(q) !== -1;
+      (row.group || "").toLowerCase().indexOf(q) !== -1 ||
+      (row.groupName || "").toLowerCase().indexOf(q) !== -1;
   }
 
   /** Customers currently drawn on the map (period + region chips + search). */
@@ -417,7 +418,9 @@
       "<dt>Qty</dt><dd>" + nf0.format(c.qty) + "</dd>" +
       "<dt>Province</dt><dd>" + escapeHtml(c.prov) + " / " + escapeHtml(DATA.provinceTh[c.prov] || "") + "</dd>" +
       "<dt>Region</dt><dd><span class=\"tip-region\">" + escapeHtml(c.region) + "</span></dd>" +
-      "<dt>Group</dt><dd>" + (c.group ? escapeHtml(c.group) : "—") + "</dd>" +
+      "<dt>Group</dt><dd>" + (c.group
+        ? escapeHtml(c.group) + (c.groupName ? " · " + escapeHtml(c.groupName) : "")
+        : "—") + "</dd>" +
       (state.period === ALL_PERIODS
         ? "<dt>Months</dt><dd>" + c.months + " of " + PERIODS.length + "</dd>" : "") +
       "<dt>ID</dt><dd>" + c.id + "</dd>" +
@@ -799,10 +802,10 @@
   // =========================================================================
   function tableRows() {
     var rows = visibleCustomers().map(function (c) {
-      return { id: c.id, name: c.name, prov: c.prov, region: c.region, group: c.group, amt: c.amt, qty: c.qty, geo: true };
+      return { id: c.id, name: c.name, prov: c.prov, region: c.region, group: c.group, groupName: c.groupName, amt: c.amt, qty: c.qty, geo: true };
     });
     visibleUnmapped().forEach(function (u) {
-      rows.push({ id: u.id, name: u.name, prov: "", region: "Unmapped", group: u.group, amt: u.amt, qty: u.qty, geo: false });
+      rows.push({ id: u.id, name: u.name, prov: "", region: "Unmapped", group: u.group, groupName: u.groupName, amt: u.amt, qty: u.qty, geo: false });
     });
 
     var key = state.sortKey, dir = state.sortDir;
@@ -822,11 +825,13 @@
     body.innerHTML = rows.map(function (r) {
       return '<tr data-id="' + r.id + '" class="' + (r.geo ? "" : "no-geo ") +
         (r.id === state.selectedId ? "is-selected" : "") + '">' +
-        '<td class="cust" title="' + escapeHtml(r.name) + '">' + escapeHtml(r.name || ("Customer " + r.id)) + '</td>' +
+        '<td class="cust" title="' + escapeHtml(r.name || ("Customer " + r.id)) + '">' +
+        escapeHtml(r.name || ("Customer " + r.id)) + '</td>' +
         '<td>' + (r.prov ? escapeHtml(r.prov) : '<span class="tag-nogeo">no coordinates</span>') + '</td>' +
         '<td><span class="region-cell" style="--cell-color:' + regionColor(r.region) + '">' +
         escapeHtml(r.region) + '</span></td>' +
-        '<td>' + (r.group ? escapeHtml(r.group) : "—") + '</td>' +
+        '<td' + (r.groupName ? ' title="' + escapeHtml(r.groupName) + '"' : "") + '>' +
+        (r.group ? escapeHtml(r.group) : "—") + '</td>' +
         '<td class="num' + (r.amt < 0 ? " neg" : "") + '">' + nf2.format(r.amt) + '</td>' +
         '<td class="num">' + nf0.format(r.qty) + '</td>' +
         '</tr>';

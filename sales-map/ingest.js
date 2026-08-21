@@ -15,14 +15,33 @@ window.SalesIngest = (function () {
   var MONTHS = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
 
+  /* Header names are matched after lowercasing and dropping spaces and
+     underscores, so each field lists the spellings seen in the wild. The
+     MAP_GPS_* set comes from the "Export Sales for MAP" extract — including
+     its Longgitude typo, which is reproduced deliberately. */
   var COLUMNS = [
-    { key: "id", header: "store_id" },
-    { key: "name", header: "store_name" },
-    { key: "lat", header: "lat" },
-    { key: "lng", header: "lng" },
-    { key: "group", header: "salesgroup" },
-    { key: "amt", header: "salesamt" },
-    { key: "qty", header: "salesqty" }
+    { key: "id",    label: "Store_ID / CUSTOMER_ID",
+      names: ["storeid", "customerid", "custid", "custno", "customercode"] },
+    { key: "name",  label: "Store_Name / MAP_GPS_Customer_Name",
+      names: ["storename", "customername", "custname", "mapgpscustomername"] },
+    { key: "lat",   label: "Lat / MAP_GPS_Latitude",
+      names: ["lat", "latitude", "mapgpslatitude", "gpslatitude"] },
+    { key: "lng",   label: "Lng / MAP_GPS_Longgitude",
+      names: ["lng", "lon", "long", "longitude", "longgitude",
+              "mapgpslonggitude", "mapgpslongitude", "gpslongitude"] },
+    { key: "group", label: "SalesGroup / MAP_GPS_Sales_Group",
+      names: ["salesgroup", "salegroup", "group", "mapgpssalesgroup"] },
+    { key: "amt",   label: "SalesAmt / MAP_BILL_LOC_AMT",
+      names: ["salesamt", "saleamt", "salesamount", "amount",
+              "mapbilllocamt", "billlocamt", "locamt"] },
+    { key: "qty",   label: "SalesQty / MAP_BILL_QTY",
+      names: ["salesqty", "saleqty", "salesquantity", "quantity", "qty",
+              "mapbillqty", "billqty"] }
+  ];
+
+  // Optional: a readable name for the sales group, when the export carries one.
+  var GROUP_NAME_HEADERS = [
+    "mapgpssalesgroupname", "salesgroupname", "salegroupname", "groupname"
   ];
 
   /* Province shapes with a bounding box each, so the hit test can reject most
@@ -94,6 +113,15 @@ window.SalesIngest = (function () {
     };
   }
 
+  /** A coordinate cell -> number, or null when it is blank or a placeholder. */
+  function toCoord(value) {
+    if (typeof value === "number") return isFinite(value) ? value : null;
+    var text = clean(value);
+    if (!text || text === "-") return null;
+    var n = Number(text);
+    return isFinite(n) && text !== "" ? n : null;
+  }
+
   function clean(value) {
     return String(value === null || value === undefined ? "" : value)
       .replace(/ /g, " ").replace(/\s+/g, " ").trim();
@@ -108,13 +136,21 @@ window.SalesIngest = (function () {
 
     var index = {}, missing = [];
     COLUMNS.forEach(function (col) {
-      var at = seen[col.header.replace(/_/g, "")];
-      if (at === undefined) missing.push(col.header);
+      var at;
+      for (var i = 0; i < col.names.length; i++) {
+        if (col.names[i] in seen) { at = seen[col.names[i]]; break; }
+      }
+      if (at === undefined) missing.push(col.label);
       else index[col.key] = at;
     });
     if (missing.length) {
-      throw new Error("The sheet is missing these columns: " + missing.join(", ") +
-        ". Expected the standard QlikView export layout.");
+      throw new Error("The file is missing these columns: " + missing.join(", ") +
+        ". Found: " + Object.keys(seen).join(", "));
+    }
+
+    index.groupName = null;
+    for (var g = 0; g < GROUP_NAME_HEADERS.length; g++) {
+      if (GROUP_NAME_HEADERS[g] in seen) { index.groupName = seen[GROUP_NAME_HEADERS[g]]; break; }
     }
     return index;
   }
@@ -124,12 +160,13 @@ window.SalesIngest = (function () {
    * @param {string} filename                  supplies the reporting period
    */
   function toPeriod(sheet, filename) {
-    var stamp = periodFromName(filename);
-    if (!stamp) {
-      throw new Error("No YYYYMM month in the filename “" + filename +
-        "”. Keep the QlikView name, e.g. " +
-        "Qlikview_Sales_by_Customer_Location_202608.xlsx");
-    }
+    // A YYYYMM in the filename names the period; without one the file is still
+    // loaded, keyed and labelled by its own name rather than inventing a date.
+    var stamp = periodFromName(filename) || {
+      period: "file:" + filename.replace(/\.[^.]+$/, "").toLowerCase(),
+      label: filename.replace(/\.[^.]+$/, ""),
+      undated: true
+    };
 
     var rows = sheet.rows || [];
     if (rows.length < 2) throw new Error("The sheet has no data rows.");
@@ -146,23 +183,27 @@ window.SalesIngest = (function () {
       var name = clean(row[at.name]);
       var group = clean(row[at.group]);
       if (group === "-") group = "";
+      var groupName = at.groupName === null ? "" : clean(row[at.groupName]);
 
-      var lat = row[at.lat], lng = row[at.lng];
-      if (typeof lat !== "number" || typeof lng !== "number" ||
-          !isFinite(lat) || !isFinite(lng)) {
-        unmapped.push({ id: id, name: name, group: group, amt: amt, qty: qty });
+      // Blanks and placeholders ("-", "xxxxx") mean the customer is not
+      // geocoded; anything that is not a real number lands in the same bucket.
+      var lat = toCoord(row[at.lat]), lng = toCoord(row[at.lng]);
+      if (lat === null || lng === null) {
+        unmapped.push({ id: id, name: name, group: group, groupName: groupName,
+          amt: amt, qty: qty });
         continue;
       }
 
       var shape = locate(lng, lat);
       if (!shape) { shape = nearest(lng, lat); snapped++; }
       if (!shape) {
-        unmapped.push({ id: id, name: name, group: group, amt: amt, qty: qty });
+        unmapped.push({ id: id, name: name, group: group, groupName: groupName,
+          amt: amt, qty: qty });
         continue;
       }
 
       customers.push({
-        id: id, name: name, group: group,
+        id: id, name: name, group: group, groupName: groupName,
         lat: Math.round(lat * 1e5) / 1e5, lng: Math.round(lng * 1e5) / 1e5,
         amt: amt, qty: qty,
         prov: shape.name, region: shape.region
@@ -176,6 +217,7 @@ window.SalesIngest = (function () {
     return {
       period: stamp.period,
       label: stamp.label,
+      undated: !!stamp.undated,
       source: filename,
       customers: customers,
       unmapped: unmapped,

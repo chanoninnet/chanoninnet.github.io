@@ -100,9 +100,33 @@ The reader works out the details itself:
 - **Quoted fields**, including ones holding the delimiter or a line break.
 - **Amounts written with thousands separators** (`1,234.56`).
 
-The columns and the filename rule are the same whatever the format: the header
-row must carry `Store_ID`, `Store_Name`, `Lat`, `Lng`, `SalesGroup`, `SalesAmt`,
-`SalesQty`, and the filename must end in the `YYYYMM` month.
+### Columns
+
+Columns are matched **by header name, in any order**, and two naming schemes
+are recognised:
+
+| Field | Accepted headers |
+|---|---|
+| Customer ID | `Store_ID`, `CUSTOMER_ID` |
+| Customer name | `Store_Name`, `MAP_GPS_Customer_Name` |
+| Latitude | `Lat`, `MAP_GPS_Latitude` |
+| Longitude | `Lng`, `MAP_GPS_Longgitude` *(the typo is deliberate — it is what the export writes)* |
+| Sales group | `SalesGroup`, `MAP_GPS_Sales_Group` |
+| Sales amount | `SalesAmt`, `MAP_BILL_LOC_AMT` |
+| Quantity | `SalesQty`, `MAP_BILL_QTY` |
+| Group name *(optional)* | `MAP_GPS_Sales_Group_Name` |
+
+A missing coordinate may be blank, `-`, or a placeholder such as `xxxxx`; all
+three put the customer in the "no coordinates" bucket rather than breaking the
+load. When the optional group-name column is present it appears in the map
+tooltip and as the Sales group cell's tooltip, and the search box matches it.
+
+### Period
+
+A `YYYYMM` in the filename names the period. **A file without one still
+loads** — it is labelled by its own filename (`Export_Sales_for_MAP`) rather
+than being rejected or given an invented date. Add the month to the filename to
+get a proper period label and to compare months in the dropdown.
 
 - Several files can be picked at once, and formats can be mixed.
 - Loaded months are remembered in the browser and come back next time you open

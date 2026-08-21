@@ -69,7 +69,7 @@ def collect_exports(paths=None):
     for path in paths:
         period, label = period_from_name(path.name)
         if not period:
-            undated.append(path.name)
+            undated.append(path)
             continue
         if period in found:
             sys.exit(
@@ -79,12 +79,14 @@ def collect_exports(paths=None):
             )
         found[period] = (label, path)
 
-    if undated:
-        sys.exit(
-            "No YYYYMM period in these filenames:\n  " + "\n  ".join(undated) + "\n"
-            "Keep the QlikView filename, e.g. "
-            "Qlikview_Sales_by_Customer_Location_202608.xlsx"
-        )
+    for path in undated:
+        # No month in the name: keep the file, keyed and labelled by its own
+        # name, rather than refusing to build or inventing a date for it.
+        key = "file:" + path.stem.lower()
+        if key in found:
+            sys.exit("Two exports are both named " + path.stem)
+        found[key] = (path.stem, path)
+        print("  no YYYYMM in " + path.name + " -> period '" + path.stem + "'")
 
     return [(period, found[period][0], found[period][1])
             for period in sorted(found)]
@@ -365,26 +367,90 @@ def load_rows(path):
     return read_delimited(path)
 
 
+# Header spellings this build accepts, matched after lowercasing and dropping
+# spaces and underscores. The MAP_GPS_* set comes from the "Export Sales for
+# MAP" extract, Longgitude typo and all.
+COLUMN_HEADERS = {
+    "id": ("storeid", "customerid", "custid", "custno", "customercode"),
+    "name": ("storename", "customername", "custname", "mapgpscustomername"),
+    "lat": ("lat", "latitude", "mapgpslatitude", "gpslatitude"),
+    "lng": ("lng", "lon", "long", "longitude", "longgitude",
+            "mapgpslonggitude", "mapgpslongitude", "gpslongitude"),
+    "group": ("salesgroup", "salegroup", "group", "mapgpssalesgroup"),
+    "amt": ("salesamt", "saleamt", "salesamount", "amount",
+            "mapbilllocamt", "billlocamt", "locamt"),
+    "qty": ("salesqty", "saleqty", "salesquantity", "quantity", "qty",
+            "mapbillqty", "billqty"),
+}
+GROUP_NAME_HEADERS = ("mapgpssalesgroupname", "salesgroupname",
+                      "salegroupname", "groupname")
+
+
+def header_index(header_row):
+    """Map field names onto the export's actual column positions."""
+    seen = {}
+    for i, cell in enumerate(header_row or ()):
+        key = re.sub(r"[\s_]", "", clean_name(cell)).lower()
+        if key and key not in seen:
+            seen[key] = i
+
+    index, missing = {}, []
+    for field, names in COLUMN_HEADERS.items():
+        at = next((seen[n] for n in names if n in seen), None)
+        if at is None:
+            missing.append(names[0])
+        else:
+            index[field] = at
+    if missing:
+        sys.exit("The export is missing these columns: " + ", ".join(missing) +
+                 "\nFound: " + ", ".join(seen))
+
+    index["groupName"] = next((seen[n] for n in GROUP_NAME_HEADERS if n in seen), None)
+    return index
+
+
+def to_coord(value):
+    """A coordinate cell -> float, or None when blank or a placeholder."""
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    text = clean_name(value)
+    if not text or text == "-":
+        return None
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
 def read_export(xlsx_path, provinces):
     """One month's export -> (mapped customers, unmapped customers, snap count)."""
-    rows = load_rows(xlsx_path)[1:]                   # drop the header row
+    all_rows = load_rows(xlsx_path)
+    at = header_index(all_rows[0] if all_rows else [])
+    rows = all_rows[1:]
 
     customers, unmapped, outside = [], [], 0
+    def cell(row, key):
+        at_key = at.get(key)
+        return row[at_key] if at_key is not None and at_key < len(row) else None
+
     for row in rows:
-        if len(row) < 7:
+        store_id = cell(row, "id")
+        if store_id is None or store_id == "":
             continue
-        store_id, store_name, lat, lng, group, amt, qty = row[:7]
-        amount = float(amt or 0)
-        quantity = float(qty or 0)
-        name = clean_name(store_name)
-        sales_group = clean_name(group)
+        amount = float(cell(row, "amt") or 0)
+        quantity = float(cell(row, "qty") or 0)
+        name = clean_name(cell(row, "name"))
+        sales_group = clean_name(cell(row, "group"))
         if sales_group == "-":
             sales_group = ""
+        group_name = clean_name(cell(row, "groupName"))
 
-        if not isinstance(lat, (int, float)) or not isinstance(lng, (int, float)):
+        lat = to_coord(cell(row, "lat"))
+        lng = to_coord(cell(row, "lng"))
+        if lat is None or lng is None:
             unmapped.append({
                 "id": store_id, "name": name, "group": sales_group,
-                "amt": amount, "qty": quantity,
+                "groupName": group_name, "amt": amount, "qty": quantity,
             })
             continue
 
@@ -401,6 +467,7 @@ def read_export(xlsx_path, provinces):
 
         customers.append({
             "id": store_id, "name": name, "group": sales_group,
+            "groupName": group_name,
             "lat": round(float(lat), 5), "lng": round(float(lng), 5),
             "amt": amount, "qty": quantity,
             "prov": province, "region": PROVINCE_REGION[province],
