@@ -1030,13 +1030,21 @@
     return PERIODS.filter(function (p) { return p.loaded; });
   }
 
+  /** A workbook or a delimited text export — both end up as {name, rows}. */
+  function readSheet(file) {
+    return window.TextTable.handles(file.name)
+      ? window.TextTable.read(file)
+      : window.XlsxReader.readFirstSheet(file);
+  }
+
   async function handleFiles(fileList) {
     var files = Array.prototype.slice.call(fileList || []).filter(function (f) {
-      return /\.xlsx$/i.test(f.name);
+      return /\.(xlsx|csv|tsv|txt)$/i.test(f.name);
     });
     if (!files.length) {
-      statusMessage("No <b>.xlsx</b> files in that selection. " +
-        "Pick the QlikView export, not a .xls or .csv.", "error");
+      statusMessage("Nothing readable in that selection. Pick a QlikView export " +
+        "as <b>.xlsx</b>, <b>.csv</b> or <b>.txt</b> — an old <b>.xls</b> has to be " +
+        "saved as one of those first.", "error");
       return;
     }
 
@@ -1046,7 +1054,7 @@
     var added = [], failed = [];
     for (var i = 0; i < files.length; i++) {
       try {
-        var sheet = await window.XlsxReader.readFirstSheet(files[i]);
+        var sheet = await readSheet(files[i]);
         var period = window.SalesIngest.toPeriod(sheet, files[i].name);
         period.loaded = true;
         added.push(period);

@@ -64,6 +64,7 @@ index.html              markup
 app.css                 theme tokens (light + dark) and layout
 app.js                  canvas map, charts, filters, table, Excel loading
 xlsx.js                 minimal in-browser .xlsx reader (no libraries)
+csv.js                  .csv / .txt / .tsv reader, delimiter + encoding sniffing
 ingest.js               sheet -> customers + regions, the browser twin of the script
 source/                 >>> put the monthly .xlsx export here <<<
 data/thailand.js        simplified province polygons  (~142 KB)
@@ -77,12 +78,33 @@ instead.
 
 ## Loading a month: two ways
 
-**The quick way — the Load Excel button.** Click **Load Excel…** in the top
-right (or drag the file anywhere onto the page) and pick a QlikView `.xlsx`.
-The page reads it, assigns regions, and switches to that month straight away.
-No Python, no command line, no rebuild.
+**The quick way — the Load Data button.** Click **Load Data…** in the top right
+(or drag the file anywhere onto the page) and pick a QlikView export. The page
+reads it, assigns regions, and switches to that month straight away. No Python,
+no command line, no rebuild.
 
-- Several files can be picked at once.
+### File formats
+
+**`.csv`, `.txt`, `.tsv` and `.xlsx` all work**, in the browser and in the build
+script alike. Plain text is the simpler path — no ZIP, no XML — so prefer it if
+QlikView can export either.
+
+The reader works out the details itself:
+
+- **Delimiter**: comma, tab, semicolon or pipe.
+- **Encoding**: UTF-8, UTF-8 with BOM, UTF-16, or **Windows-874 / TIS-620**.
+  That last one matters — Excel and QlikView often save Thai text as Windows-874
+  rather than UTF-8, and reading it as UTF-8 would turn every Thai customer name
+  into mojibake. A byte-order mark wins; otherwise a strict UTF-8 decode is
+  tried and Windows-874 is the fallback when it fails.
+- **Quoted fields**, including ones holding the delimiter or a line break.
+- **Amounts written with thousands separators** (`1,234.56`).
+
+The columns and the filename rule are the same whatever the format: the header
+row must carry `Store_ID`, `Store_Name`, `Lat`, `Lng`, `SalesGroup`, `SalesAmt`,
+`SalesQty`, and the filename must end in the `YYYYMM` month.
+
+- Several files can be picked at once, and formats can be mixed.
 - Loaded months are remembered in the browser and come back next time you open
   the page. **Clear loaded** removes them again.
 - They live in *your browser only*. Sending the folder to a colleague sends the

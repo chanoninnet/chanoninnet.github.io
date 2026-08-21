@@ -19,6 +19,8 @@ Both can still be overridden:
 
     python3 tools/build_data.py <sales.xlsx> [provinces.geojson]
 """
+import csv as csvlib
+import io
 import json
 import re
 import sys
@@ -53,11 +55,12 @@ def collect_exports(paths=None):
     option in the dashboard's period filter.
     """
     if paths is None:
-        paths = [p for p in sorted(SOURCE_DIR.glob("*.xlsx"))
-                 if not p.name.startswith("~$")]     # skip Excel lock files
+        paths = sorted(p for p in SOURCE_DIR.iterdir()
+                       if p.suffix.lower() in DATA_SUFFIXES
+                       and not p.name.startswith("~$"))   # skip Excel lock files
         if not paths:
             sys.exit(
-                "No .xlsx found in " + str(SOURCE_DIR) + "\n"
+                "No .xlsx / .csv / .txt found in " + str(SOURCE_DIR) + "\n"
                 "Put the monthly QlikView export there, for example\n"
                 "  source/Qlikview_Sales_by_Customer_Location_202608.xlsx"
             )
@@ -315,13 +318,62 @@ def main(exports, geojson_path):
     print(f"thailand.js {map_bytes/1024:.0f} KB   sales.js {data_bytes/1024:.0f} KB")
 
 
+DATA_SUFFIXES = {".xlsx", ".csv", ".tsv", ".txt"}
+
+
+def decode_text(raw):
+    """Bytes -> text. Thai exports are often Windows-874 rather than UTF-8."""
+    if raw[:3] == b"\xef\xbb\xbf":
+        return raw[3:].decode("utf-8")
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw.decode("cp874", errors="replace")
+
+
+def read_delimited(path):
+    """A .csv/.tsv/.txt export -> rows, with numbers as numbers."""
+    text = decode_text(path.read_bytes())
+    first = text.splitlines()[0] if text.splitlines() else ""
+    delimiter = max([",", "\t", ";", "|"], key=first.count)
+
+    rows = []
+    for row in csvlib.reader(io.StringIO(text), delimiter=delimiter):
+        if not row or (len(row) == 1 and not row[0].strip()):
+            continue
+        rows.append([coerce_cell(cell) for cell in row])
+    return rows
+
+
+def coerce_cell(text):
+    value = text.strip()
+    if not value or value == "-":
+        return value
+    candidate = value.replace(",", "") if re.match(r"^-?\d{1,3}(,\d{3})+(\.\d+)?$", value) else value
+    if re.match(r"^-?\d+$", candidate) and not re.match(r"^-?0\d", candidate):
+        return int(candidate)
+    if re.match(r"^-?(\d+\.\d*|\.\d+)([eE][+-]?\d+)?$", candidate):
+        return float(candidate)
+    return value
+
+
+def load_rows(path):
+    """Every data row of an export, whatever the file format."""
+    if path.suffix.lower() == ".xlsx":
+        ws = openpyxl.load_workbook(path, data_only=True)["Sheet1"]
+        return [list(r) for r in ws.iter_rows(values_only=True)]
+    return read_delimited(path)
+
+
 def read_export(xlsx_path, provinces):
-    """One month's sheet -> (mapped customers, unmapped customers, snap count)."""
-    ws = openpyxl.load_workbook(xlsx_path, data_only=True)["Sheet1"]
-    rows = list(ws.iter_rows(min_row=2, values_only=True))
+    """One month's export -> (mapped customers, unmapped customers, snap count)."""
+    rows = load_rows(xlsx_path)[1:]                   # drop the header row
 
     customers, unmapped, outside = [], [], 0
-    for store_id, store_name, lat, lng, group, amt, qty in rows:
+    for row in rows:
+        if len(row) < 7:
+            continue
+        store_id, store_name, lat, lng, group, amt, qty = row[:7]
         amount = float(amt or 0)
         quantity = float(qty or 0)
         name = clean_name(store_name)

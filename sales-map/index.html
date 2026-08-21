@@ -14,19 +14,19 @@
     <p class="topbar-sub">QlikView export &middot; period <strong id="periodLabel">&mdash;</strong> &middot; offline basemap, no network required</p>
   </div>
   <div class="topbar-actions">
-    <button id="loadBtn" class="primary-btn" type="button">Load Excel&hellip;</button>
+    <button id="loadBtn" class="primary-btn" type="button">Load Data&hellip;</button>
     <button id="clearBtn" class="ghost-btn" type="button" hidden>Clear loaded</button>
     <button id="themeToggle" class="ghost-btn" type="button" aria-label="Switch colour theme">
       <span data-theme-label>Dark</span>
     </button>
   </div>
-  <input id="fileInput" type="file" accept=".xlsx" multiple hidden>
+  <input id="fileInput" type="file" accept=".xlsx,.csv,.tsv,.txt" multiple hidden>
 </header>
 
 <p class="load-status" id="loadStatus" role="status" hidden></p>
 
 <div class="drop-veil" id="dropVeil" hidden aria-hidden="true">
-  <div class="drop-card">Drop QlikView <b>.xlsx</b> exports to load them</div>
+  <div class="drop-card">Drop QlikView exports &mdash; <b>.xlsx</b>, <b>.csv</b> or <b>.txt</b></div>
 </div>
 
 <section class="filters" aria-label="Filters">
@@ -162,6 +162,7 @@
 <script src="data/thailand.js"></script>
 <script src="data/sales.js"></script>
 <script src="xlsx.js"></script>
+<script src="csv.js"></script>
 <script src="ingest.js"></script>
 <script src="app.js"></script>
 </body>
