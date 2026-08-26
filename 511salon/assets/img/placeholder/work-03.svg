@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1250" width="1000" height="1250" role="img" aria-label="ผลงาน 03">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#241a22"/><stop offset=".55" stop-color="#3a2436"/><stop offset="1" stop-color="#14101a"/>
+</linearGradient></defs>
+<rect width="1000" height="1250" fill="url(#g)"/>
+<rect x="35" y="35" width="930" height="1180" fill="none" stroke="#C79A4B" stroke-opacity=".38" stroke-width="4" stroke-dasharray="30 22"/>
+<g fill="#F0E6D6" font-family="'IBM Plex Sans Thai','Noto Sans Thai','Sarabun',sans-serif" text-anchor="middle">
+<text x="500" y="588" font-size="62" font-weight="600">ผลงาน 03</text>
+<text x="500" y="662" font-size="42" fill="#C79A4B">ก่อน–หลัง</text>
+<text x="500" y="732" font-size="32" fill="#8d8296" font-family="'IBM Plex Mono',monospace">1000 × 1250</text>
+</g></svg>

@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     TODO ก่อนขึ้นโดเมนจริง (511salon.com)
+     1. ลบ <meta name="robots" content="noindex,nofollow"> บรรทัดล่างนี้
+        (ตอนนี้กันไม่ให้ Google เก็บหน้าพรีวิวบน github.io ไปแข่งกับโดเมนจริง)
+     2. เติมค่าที่ทำเครื่องหมาย TODO(ยืนยัน) ทุกจุด — ที่อยู่ พิกัด เบอร์ ลิงก์ LINE
+     3. เปลี่ยนภาพใน assets/img/placeholder/ เป็นภาพจริง (ดู README.md)
+     4. ใส่โค้ด GA4 ตรงท้าย <head>
+     ═══════════════════════════════════════════════════════════════════════ -->
+<meta name="robots" content="noindex,nofollow">
+
+<title>511 SALON ร้านทำผมสมุทรปราการ | ยืดเคราติน 1,000 บางปู–BTS เคหะฯ</title>
+<meta name="description" content="511 SALON ร้านทำผมสมุทรปราการ รับซ่อมผมเสียจากการฟอกและดัด ยืดเคราตินเริ่ม 1,000 บาท สั้น–ยาวราคาเดียว ฟรีตัดแต่งและบำรุงทุกขั้นตอน 2 สาขา บางปูและ BTS เคหะฯ เปิดทุกวัน 9 โมง วอล์คอินได้">
+<link rel="canonical" href="https://511salon.com/">
+<meta name="theme-color" content="#0A0A0B">
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="th_TH">
+<meta property="og:site_name" content="511 SALON">
+<meta property="og:title" content="511 SALON — ร้านทำผมสมุทรปราการ ที่ซ่อมผมเสียได้จริง">
+<meta property="og:description" content="ยืดเคราตินเริ่ม 1,000 บาท สั้น–ยาวราคาเดียว ฟรีตัดแต่งและบำรุงทุกขั้นตอน 2 สาขา บางปูและ BTS เคหะฯ เปิดทุกวัน 9 โมง">
+<meta property="og:url" content="https://511salon.com/">
+<meta property="og:image" content="https://511salon.com/assets/img/placeholder/og.svg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+
+<link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/anuphan-var-thai.woff2">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/anuphan-var-latin.woff2">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/plex-thai-400-thai.woff2">
+<link rel="preload" as="image" href="assets/img/placeholder/hero.svg" fetchpriority="high">
+<link rel="stylesheet" href="assets/css/main.css">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://511salon.com/#org",
+      "name": "511 SALON",
+      "url": "https://511salon.com/",
+      "logo": "https://511salon.com/assets/img/logo.png",
+      "sameAs": [
+        "https://www.facebook.com/p/511-SALON-61558333424240/",
+        "https://www.tiktok.com/@511.salon",
+        "https://www.tiktok.com/@511salon511",
+        "https://www.tiktok.com/@511salon.bangpu"
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://511salon.com/#website",
+      "url": "https://511salon.com/",
+      "name": "511 SALON",
+      "inLanguage": "th-TH",
+      "publisher": { "@id": "https://511salon.com/#org" }
+    },
+    {
+      "@type": "HairSalon",
+      "@id": "https://511salon.com/#salon-keha",
+      "name": "511 SALON สาขา BTS เคหะฯ",
+      "url": "https://511salon.com/",
+      "parentOrganization": { "@id": "https://511salon.com/#org" },
+      "image": "https://511salon.com/assets/img/placeholder/branch-keha.svg",
+      "telephone": "+66632649642",
+      "priceRange": "฿฿",
+      "currenciesAccepted": "THB",
+      "paymentAccepted": "เงินสด, โอนผ่านธนาคาร, พร้อมเพย์",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "TODO(ยืนยัน): ที่อยู่เต็มสาขา BTS เคหะฯ",
+        "addressLocality": "เมืองสมุทรปราการ",
+        "addressRegion": "สมุทรปราการ",
+        "postalCode": "TODO",
+        "addressCountry": "TH"
+      },
+      "openingHoursSpecification": [{
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+        "opens": "09:00",
+        "closes": "20:00"
+      }],
+      "areaServed": ["สมุทรปราการ","เคหะสมุทรปราการ","ตำหรุ","บางปู","สำโรง"],
+      "makesOffer": [
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "ยืดเคราติน" }, "price": "1000", "priceCurrency": "THB" },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "เคราตินสด" }, "price": "1000", "priceCurrency": "THB" },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "ยืดวอลลุ่ม" }, "price": "1999", "priceCurrency": "THB" },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "ดัดดิจิตอล" }, "price": "1999", "priceCurrency": "THB" },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "ทำสีผม" }, "price": "1299", "priceCurrency": "THB" },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "ฟอกสีผม + เชื่อมแกนผม" }, "price": "1299", "priceCurrency": "THB" }
+      ]
+    },
+    {
+      "@type": "HairSalon",
+      "@id": "https://511salon.com/#salon-bangpu",
+      "name": "511 SALON สาขาบางปู",
+      "url": "https://511salon.com/",
+      "parentOrganization": { "@id": "https://511salon.com/#org" },
+      "image": "https://511salon.com/assets/img/placeholder/branch-bangpu.svg",
+      "telephone": "+66944249394",
+      "priceRange": "฿฿",
+      "currenciesAccepted": "THB",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "TODO(ยืนยัน): ที่อยู่เต็มสาขาบางปู",
+        "addressLocality": "เมืองสมุทรปราการ",
+        "addressRegion": "สมุทรปราการ",
+        "postalCode": "TODO",
+        "addressCountry": "TH"
+      },
+      "openingHoursSpecification": [{
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+        "opens": "09:00",
+        "closes": "20:00"
+      }],
+      "areaServed": ["บางปู","บางปูใหม่","ตำหรุ","สมุทรปราการ"]
+    }
+  ]
+}
+</script>
+</head>
+
+<body>
+<a class="skip" href="#main">ข้ามไปที่เนื้อหา</a>
+
+<!-- ═══ แถบนำทาง ═══════════════════════════════════════════════════════ -->
+<header class="nav">
+  <div class="shell">
+    <a class="brand" href="#top">5<b>1</b>1 SALON</a>
+    <ul class="navlinks" id="navlinks">
+      <li><a href="#work">ผลงาน</a></li>
+      <li><a href="#services">บริการและราคา</a></li>
+      <li><a href="#about">เกี่ยวกับร้าน</a></li>
+      <li><a href="#branches">สาขา</a></li>
+    </ul>
+    <!-- TODO(ยืนยัน): เปลี่ยนเป็นลิงก์ LINE OA ตัวจริง เช่น https://lin.ee/xxxxxxx -->
+    <a class="btn btn-line btn-sm" href="https://line.me/R/ti/p/@511salon"
+       data-ev="click_line" data-ev-where="nav" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.5 2 2 5.7 2 10.2c0 4 3.6 7.4 8.4 8 .3.1.8.2.9.5.1.3.1.7 0 1l-.1.9c0 .3-.2 1 .9.6 1.1-.5 6-3.5 8.2-6h0C21.8 13.7 22 12 22 10.2 22 5.7 17.5 2 12 2Z"/></svg>
+      จองคิว
+    </a>
+    <button class="navtoggle" type="button" aria-expanded="false" aria-controls="navlinks" aria-label="เปิดเมนู">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ═══ 01 · HERO ══════════════════════════════════════════════════════ -->
+<section class="hero" id="top">
+  <!-- TODO(ภาพ): แทนที่ด้วยภาพจริง 1800×1200 · ดูวิธีเปลี่ยนใน README.md -->
+  <img class="hero-img" src="assets/img/placeholder/hero.svg" alt="" width="1800" height="1200" fetchpriority="high">
+  <div class="shell">
+    <p class="eyebrow">511 SALON · สมุทรปราการ</p>
+    <h1>ร้านทำผมสมุทรปราการ<br>ที่ซ่อมผมเสียได้จริง</h1>
+    <p class="hero-price">ยืดเคราติน เริ่ม <b>฿1,000</b> สั้น–ยาว ราคาเดียว<br>ฟรีตัดแต่งและบำรุงทุกขั้นตอน</p>
+    <p class="hero-meta">
+      <span>เปิดทุกวัน 9:00 น.</span>
+      <span>วอล์คอินได้</span>
+      <span>2 สาขา · บางปู · BTS เคหะฯ</span>
+    </p>
+    <div class="hero-cta">
+      <a class="btn btn-line" href="https://line.me/R/ti/p/@511salon" data-ev="click_line" data-ev-where="hero" rel="noopener">ทักไลน์จองคิว</a>
+      <a class="btn btn-ghost-d" href="tel:+66632649642" data-ev="click_phone" data-ev-where="hero">โทร 063-264-9642</a>
+    </div>
+  </div>
+  <span class="scrollcue" aria-hidden="true">เลื่อนดูผลงาน</span>
+</section>
+
+<!-- ═══ 02 · บทเปิด ════════════════════════════════════════════════════ -->
+<section class="sec sec-dark statement">
+  <div class="shell">
+    <ul>
+      <li class="reveal">ผมฟอกจนขาดเป็นช่วง</li>
+      <li class="reveal reveal-d1">ยืดมาแล้วไม่ตรงสักที</li>
+      <li class="reveal reveal-d2">ดัดจนแห้งกรอบ หวีไม่ลง</li>
+    </ul>
+    <p class="punch reveal reveal-d3">เราเจอมาหมดแล้ว<br>และ<b>ซ่อมกลับมาได้</b></p>
+  </div>
+</section>
+
+<!-- ═══ 03 · ไทล์ตัวเลข ════════════════════════════════════════════════ -->
+<section class="sec sec-light">
+  <div class="shell">
+    <dl class="tiles reveal">
+      <div class="tile">
+        <dt><span data-count="1000" data-prefix="฿">฿1,000</span></dt>
+        <dd>ยืดเคราติน ราคาเดียวทุกความยาว ไม่บวกเพิ่มตามความยาวผม<sup>1</sup></dd>
+      </div>
+      <div class="tile">
+        <dt><span data-count="2">2</span> <small>สาขา</small></dt>
+        <dd>บางปู–ตำหรุ และ BTS เคหะฯ เลือกสาขาที่สะดวกกว่าได้</dd>
+      </div>
+      <div class="tile">
+        <dt>9:00 <small>ทุกวัน</small></dt>
+        <dd>เปิดทุกวันไม่มีวันหยุด วอล์คอินได้ หรือทักไลน์จองล่วงหน้า</dd>
+      </div>
+      <div class="tile">
+        <dt><span data-count="3">3</span> <small>นาที</small></dt>
+        <dd>เดินจากสถานี BTS เคหะฯ ถึงหน้าร้าน<sup>2</sup></dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<!-- ═══ 04 · ผลงานเด่น (การ์ดเลื่อนแนวนอน) ═════════════════════════════ -->
+<section class="sec sec-dark" id="work">
+  <div class="shell">
+    <div class="rail-head reveal">
+      <div>
+        <p class="eyebrow">ผลงานเด่น</p>
+        <h2>งานที่เราทำบ่อยที่สุด</h2>
+        <p class="lede">ทุกภาพถ่ายที่ร้าน ไม่ผ่านฟิลเตอร์เปลี่ยนสีผม<sup>3</sup></p>
+      </div>
+      <div class="rail-nav">
+        <button class="rail-btn" type="button" data-rail-prev aria-label="เลื่อนไปทางซ้าย">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 19 8 12l7-7"/></svg>
+        </button>
+        <button class="rail-btn" type="button" data-rail-next aria-label="เลื่อนไปทางขวา">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="rail" data-rail tabindex="0" role="region" aria-label="ผลงานเด่นของร้าน เลื่อนแนวนอนได้">
+      <article class="card-work">
+        <img src="assets/img/placeholder/rail-keratin.svg" alt="ผมยาวประบ่าที่ผ่านการฟอกมาก่อน หลังยืดเคราตินแล้วตรงเงาเป็นเส้นเดียวกัน" width="900" height="1200" loading="lazy" decoding="async">
+        <div class="body"><h3>ยืดเคราติน</h3><p>ผมฟอกประบ่า เส้นแห้งชี้ฟู ยืดแล้วยังจับปลายได้ ไม่ลีบติดหนังศีรษะ</p><p class="price">เริ่ม ฿1,000</p></div>
+      </article>
+      <article class="card-work">
+        <img src="assets/img/placeholder/rail-treatment.svg" alt="ผมที่ขาดเป็นช่วงจากการฟอก หลังทำเคราตินสดแล้วเส้นผมกลับมาเรียบต่อเนื่อง" width="900" height="1200" loading="lazy" decoding="async">
+        <div class="body"><h3>เคราตินสด</h3><p>สำหรับผมเสียรุนแรง ฟอกจนขาดช็อต เติมโปรตีนกลับเข้าเส้นผมโดยไม่ยืด</p><p class="price">เริ่ม ฿1,000</p></div>
+      </article>
+      <article class="card-work">
+        <img src="assets/img/placeholder/rail-volume.svg" alt="ผมยาวหลังยืดวอลลุ่ม โคนผมยังมีวอลลุ่ม ปลายตรงเป็นระเบียบ" width="900" height="1200" loading="lazy" decoding="async">
+        <div class="body"><h3>ยืดวอลลุ่ม</h3><p>ตรงแต่ไม่แบน โคนผมยังพองรับกับรูปหน้า เหมาะกับคนผมบางกลัวลีบ</p><p class="price">เริ่ม ฿1,999</p></div>
+      </article>
+      <article class="card-work">
+        <img src="assets/img/placeholder/rail-perm.svg" alt="ลอนผมจากการดัดดิจิตอล ลอนเป็นระเบียบตั้งแต่กลางลงปลาย" width="900" height="1200" loading="lazy" decoding="async">
+        <div class="body"><h3>ดัดดิจิตอล</h3><p>ลอนอยู่ทรงข้ามวัน จัดเองที่บ้านได้ด้วยการเป่าลมร้อนอย่างเดียว</p><p class="price">เริ่ม ฿1,999</p></div>
+      </article>
+      <article class="card-work">
+        <img src="assets/img/placeholder/rail-color.svg" alt="ผมย้อมโทนน้ำตาลประกายหม่น ถ่ายใต้แสงธรรมชาติที่หน้าร้าน" width="900" height="1200" loading="lazy" decoding="async">
+        <div class="body"><h3>ทำสีผม</h3><p>เลือกโทนจากสีผมเดิมและสีผิว บอกก่อนว่าต้องฟอกกี่รอบถึงจะได้โทนนั้น</p><p class="price">เริ่ม ฿1,299</p></div>
+      </article>
+      <article class="card-work">
+        <img src="assets/img/placeholder/rail-bleach.svg" alt="ผมที่ฟอกสีพร้อมเชื่อมแกนผม ปลายผมยังไม่ขาดยุ่ยหลังฟอก" width="900" height="1200" loading="lazy" decoding="async">
+        <div class="body"><h3>ฟอกสี + เชื่อมแกนผม</h3><p>เชื่อมแกนระหว่างฟอก ลดการขาดยุ่ยของเส้นผม ทำสีต่อได้ในวันเดียวกัน</p><p class="price">เริ่ม ฿1,299</p></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 · ลากเทียบก่อน–หลัง ═════════════════════════════════════════ -->
+<section class="sec sec-light2">
+  <div class="shell">
+    <div class="sechead reveal">
+      <p class="eyebrow">ลากดูเอง</p>
+      <h2>ก่อน และ หลัง</h2>
+      <p class="lede">ลากแถบกลางภาพไปทางซ้ายขวาเพื่อเทียบดูเอง หรือกดปุ่มลูกศรบนคีย์บอร์ด</p>
+    </div>
+
+    <div class="cmp-tabs" role="tablist" aria-label="เลือกเคสผลงาน">
+      <button class="chip" type="button" role="tab" aria-selected="true" data-case
+              data-before="assets/img/placeholder/cmp-1-before.svg"
+              data-after="assets/img/placeholder/cmp-1-after.svg"
+              data-alt-before="ผมฟอกแห้งชี้ฟูก่อนเข้าร้าน"
+              data-alt-after="ผมเส้นเดียวกันหลังยืดเคราตินและทำเคราตินสด ตรงเงาเรียบ"
+              data-title="ผมฟอกแห้งชี้ฟู → ตรงเงาในวันเดียว"
+              data-desc="ผมผ่านการฟอกมาสองรอบ ปลายแห้งจนหวีสะดุด เลือกยืดเคราตินคู่กับเคราตินสดเพื่อเติมโปรตีนไปพร้อมกัน"
+              data-service="ยืดเคราติน + เคราตินสด" data-time="ประมาณ 3 ชั่วโมง" data-price="฿1,999">เคส 1 · ผมฟอก</button>
+      <button class="chip" type="button" role="tab" aria-selected="false" data-case
+              data-before="assets/img/placeholder/cmp-2-before.svg"
+              data-after="assets/img/placeholder/cmp-2-after.svg"
+              data-alt-before="ผมดัดเก่าที่ปลายแตกและทรงเสียก่อนแก้"
+              data-alt-after="ผมหลังยืดวอลลุ่ม โคนพองปลายตรงเป็นระเบียบ"
+              data-title="ดัดเก่าปลายแตก → ตรงแต่ไม่ลีบ"
+              data-desc="ลอนเก่าคลายไม่เท่ากันจนทรงเสีย ใช้ยืดวอลลุ่มเพื่อเก็บทรงโดยยังเหลือวอลลุ่มที่โคน ไม่ให้แบนติดหัว"
+              data-service="ยืดวอลลุ่ม" data-time="ประมาณ 3 ชั่วโมง" data-price="฿1,999">เคส 2 · ดัดเก่า</button>
+      <button class="chip" type="button" role="tab" aria-selected="false" data-case
+              data-before="assets/img/placeholder/cmp-3-before.svg"
+              data-after="assets/img/placeholder/cmp-3-after.svg"
+              data-alt-before="ผมย้อมที่สีตกกลายเป็นโทนส้ม"
+              data-alt-after="ผมหลังฟอกและเชื่อมแกนผม ได้โทนน้ำตาลหม่นสม่ำเสมอ"
+              data-title="สีตกเป็นส้ม → น้ำตาลหม่นเสมอกัน"
+              data-desc="สีเดิมตกจนเหลือโทนส้มไม่เท่ากันทั้งหัว ฟอกพร้อมเชื่อมแกนผมเพื่อคุมความเสียหาย แล้วลงโทนใหม่ในวันเดียวกัน"
+              data-service="ฟอกสีผม + เชื่อมแกนผม" data-time="ประมาณ 4 ชั่วโมง" data-price="฿1,299">เคส 3 · แก้สีตก</button>
+    </div>
+
+    <div class="cmp-wrap">
+      <figure class="cmp reveal" data-compare style="--pos:50%">
+        <span class="tag tag-b">ก่อน</span>
+        <span class="tag tag-a">หลัง</span>
+        <div class="before"><img src="assets/img/placeholder/cmp-1-before.svg" alt="ผมฟอกแห้งชี้ฟูก่อนเข้าร้าน" width="1000" height="1250" loading="lazy" decoding="async"></div>
+        <div class="after"><img src="assets/img/placeholder/cmp-1-after.svg" alt="ผมเส้นเดียวกันหลังยืดเคราตินและทำเคราตินสด ตรงเงาเรียบ" width="1000" height="1250" loading="lazy" decoding="async"></div>
+        <span class="handle" aria-hidden="true"></span>
+        <input class="cmp-range" type="range" min="0" max="100" value="50" step="1"
+               aria-label="เลื่อนเพื่อเทียบภาพก่อนและหลัง" data-ev="drag_compare">
+      </figure>
+
+      <div class="cmp-note reveal reveal-d1" data-compare-note>
+        <h3>ผมฟอกแห้งชี้ฟู → ตรงเงาในวันเดียว</h3>
+        <p>ผมผ่านการฟอกมาสองรอบ ปลายแห้งจนหวีสะดุด เลือกยืดเคราตินคู่กับเคราตินสดเพื่อเติมโปรตีนไปพร้อมกัน</p>
+        <dl>
+          <dt>บริการ</dt><dd data-fill-service>ยืดเคราติน + เคราตินสด</dd>
+          <dt>เวลาในร้าน</dt><dd data-fill-time>ประมาณ 3 ชั่วโมง</dd>
+          <dt>ราคา</dt><dd data-fill-price>฿1,999</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 · แกลเลอรีผลงาน ═════════════════════════════════════════════ -->
+<section class="sec sec-light">
+  <div class="shell">
+    <div class="sechead reveal">
+      <p class="eyebrow">แกลเลอรี</p>
+      <h2>ผลงานล่าสุดจากทั้งสองสาขา</h2>
+      <p class="lede">แสดง <span data-filter-count>9</span> ผลงาน — กรองตามบริการที่สนใจได้</p>
+    </div>
+
+    <div class="filters reveal" data-filters role="group" aria-label="กรองผลงานตามบริการ">
+      <button class="chip" type="button" data-filter="all" aria-pressed="true">ทั้งหมด</button>
+      <button class="chip" type="button" data-filter="straighten" aria-pressed="false">ยืดผม</button>
+      <button class="chip" type="button" data-filter="perm" aria-pressed="false">ดัดผม</button>
+      <button class="chip" type="button" data-filter="color" aria-pressed="false">ทำสี</button>
+      <button class="chip" type="button" data-filter="repair" aria-pressed="false">ซ่อมผมเสีย</button>
+    </div>
+
+    <div class="grid-work">
+      <figure class="work reveal" data-tags="straighten repair">
+        <img src="assets/img/placeholder/work-01.svg" alt="ผมยาวประบ่าหลังยืดเคราติน ตรงเงาไม่ลีบติดหนังศีรษะ" width="1000" height="1250" loading="lazy" decoding="async">
+        <figcaption><b>ยืดเคราติน</b>ผมฟอกประบ่า · สาขาบางปู</figcaption>
+      </figure>
+      <figure class="work reveal reveal-d1" data-tags="straighten">
+        <img src="assets/img/placeholder/work-02.svg" alt="ผมยาวหลังยืดวอลลุ่ม โคนผมยังพองปลายตรง" width="1000" height="1250" loading="lazy" decoding="async">
+        <figcaption><b>ยืดวอลลุ่ม</b>ผมยาวเลยสะบัก · สาขา BTS เคหะฯ</figcaption>
+      </figure>
+      <figure class="work reveal reveal-d2" data-tags="perm">
+        <img src="assets/img/placeholder/work-03.svg" alt="ลอนผมจากการดัดดิจิตอล ลอนกลางถึงปลายเป็นระเบียบ" width="1000" height="1250" loading="lazy" decoding="async">
+        <figcaption><b>ดัดดิจิตอล</b>ลอนกลาง–ปลาย · สาขาบางปู</figcaption>
+      </figure>
+      <figure class="work reveal" data-tags="color">
+        <img src="assets/img/placeholder/work-04.svg" alt="ผมย้อมโทนน้ำตาลประกายหม่นทั้งหัว" width="1000" height="1250" loading="lazy" decoding="async">
+        <figcaption><b>ทำสีผม</b>โทนน้ำตาลหม่น · สาขา BTS เคหะฯ</figcaption>
+      </figure>
+      <figure class="work reveal reveal-d1" data-tags="color repair">
+        <img src="assets/img/placeholder/work-05.svg" alt="ผมหลังฟอกสีพร้อมเชื่อมแกนผม ปลายผมยังไม่ขาดยุ่ย" width="1000" height="1250" loading="lazy" decoding="async">
+        <figcaption><b>ฟอกสี + เชื่อมแกนผม</b>ฟอกสองรอบ · สาขาบางปู</figcaption>
+      </figure>
+      <figure class="work reveal reveal-d2" data-tags="repair">
+        <img src="assets/img/placeholder/work-06.svg" alt="ผมที่เคยขาดเป็นช่วงจากการฟอก หลังทำเคราตินสดแล้วเส้นเรียบต่อเนื่อง" width="1000" height="1250" loading="lazy" decoding="async">
+        <figcaption><b>เคราตินสด</b>ผมขาดช็อตจากการฟอก · สาขา BTS เคหะฯ</figcaption>
+      </figure>
+      <figure class="work reveal" data-tags="straighten perm">
+        <img src="assets/img/placeholder/work-07.svg" alt="ผมยืดโคนดัดปลาย โคนตรงปลายเป็นลอนใหญ่" width="1000" height="1250" loading="lazy" decoding="async">
+        <figcaption><b>ยืดโคนดัดปลาย</b>ลอนใหญ่ปลายผม · สาขาบางปู</figcaption>
+      </figure>
+      <figure class="work reveal reveal-d1" data-tags="straighten">
+        <img src="assets/img/placeholder/work-08.svg" alt="ผมสั้นระดับคางหลังยืดเคราติน ทรงบ๊อบเข้ารูป" width="1000" height="1250" loading="lazy" decoding="async">
+        <figcaption><b>ยืดเคราติน</b>ทรงบ๊อบสั้น · สาขา BTS เคหะฯ</figcaption>
+      </figure>
+      <figure class="work reveal reveal-d2" data-tags="color">
+        <img src="assets/img/placeholder/work-09.svg" alt="ผมทำสีปิดผมขาวโทนน้ำตาลเข้มเสมอกันทั้งหัว" width="1000" height="1250" loading="lazy" decoding="async">
+        <figcaption><b>ทำสีปิดผมขาว</b>โทนน้ำตาลเข้ม · สาขาบางปู</figcaption>
+      </figure>
+    </div>
+
+    <div class="gallery-more reveal">
+      <p>ดูผลงานใหม่ทุกสัปดาห์ได้ที่ TikTok ของแต่ละสาขา</p>
+      <a class="btn btn-ghost-l btn-sm" href="https://www.tiktok.com/@511.salon" rel="noopener" data-ev="click_social" data-ev-where="gallery">TikTok สาขาเคหะฯ</a>
+      <a class="btn btn-ghost-l btn-sm" href="https://www.tiktok.com/@511salon.bangpu" rel="noopener" data-ev="click_social" data-ev-where="gallery">TikTok สาขาบางปู</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 · บริการและราคา ═════════════════════════════════════════════ -->
+<section class="sec sec-light2" id="services">
+  <div class="shell">
+    <div class="sechead reveal">
+      <p class="eyebrow">บริการและราคา</p>
+      <h2>ราคาบอกครบตั้งแต่ก่อนนั่งเก้าอี้</h2>
+      <p class="lede">ทุกราคารวมตัดแต่งและบำรุงทุกขั้นตอนแล้ว ถ้าสภาพผมทำให้ต้องเพิ่มขั้นตอน เราบอกและตกลงราคาก่อนเริ่มเสมอ<sup>1</sup></p>
+    </div>
+
+    <div class="grid-svc">
+      <article class="svc reveal">
+        <h3>ยืดเคราติน</h3>
+        <p class="price">฿1,000</p>
+        <p>ยืดตรงพร้อมเคลือบเคราติน สั้น–ยาวราคาเดียว ไม่บวกเพิ่มตามความยาว</p>
+        <p class="meta">ประมาณ 2–3 ชั่วโมง</p>
+      </article>
+      <article class="svc reveal reveal-d1">
+        <h3>เคราตินสด</h3>
+        <p class="price">฿1,000</p>
+        <p>สำหรับผมเสียรุนแรงจากการฟอกจนขาดช็อต เติมโปรตีนกลับเข้าเส้นผมโดยไม่ยืด</p>
+        <p class="meta">ประมาณ 2 ชั่วโมง</p>
+      </article>
+      <article class="svc reveal reveal-d2">
+        <h3>ยืดเคราติน + เคราตินสด</h3>
+        <p class="price">฿1,999</p>
+        <p>ชุดคู่สำหรับผมเสียมากหรือผมฟอก ยืดตรงและซ่อมเส้นผมไปพร้อมกันในครั้งเดียว</p>
+        <p class="meta">ประมาณ 3 ชั่วโมง</p>
+      </article>
+      <article class="svc reveal">
+        <h3>ยืดวอลลุ่ม</h3>
+        <p class="price">฿1,999</p>
+        <p>ตรงแต่ยังเหลือวอลลุ่มที่โคนผม เหมาะกับคนผมบางที่กลัวยืดแล้วลีบติดหัว</p>
+        <p class="meta">ประมาณ 3 ชั่วโมง</p>
+      </article>
+      <article class="svc reveal reveal-d1">
+        <h3>ยืดโคนดัดปลาย</h3>
+        <p class="price">฿1,999</p>
+        <p>เก็บโคนให้เรียบ ปล่อยปลายเป็นลอน ได้ทรงที่จัดง่ายโดยไม่ต้องหนีบทุกเช้า</p>
+        <p class="meta">ประมาณ 3–4 ชั่วโมง</p>
+      </article>
+      <article class="svc reveal reveal-d2">
+        <h3>ดัดดิจิตอล</h3>
+        <p class="price">฿1,999</p>
+        <p>ลอนคงรูปข้ามวัน จัดทรงเองที่บ้านได้ด้วยการเป่าลมร้อนอย่างเดียว</p>
+        <p class="meta">ประมาณ 3–4 ชั่วโมง</p>
+      </article>
+      <article class="svc reveal">
+        <h3>ทำสีผม</h3>
+        <p class="price">฿1,299</p>
+        <p>เลือกโทนจากสีผมเดิมและสีผิว บอกก่อนว่าต้องฟอกกี่รอบถึงจะได้โทนที่ต้องการ</p>
+        <p class="meta">ประมาณ 2–3 ชั่วโมง</p>
+      </article>
+      <article class="svc reveal reveal-d1">
+        <h3>ฟอกสีผม + เชื่อมแกนผม</h3>
+        <p class="price">฿1,299</p>
+        <p>เชื่อมแกนผมระหว่างฟอกเพื่อลดการขาดยุ่ย เป็นขั้นตอนที่ทำให้ฟอกแล้วผมยังอยู่</p>
+        <p class="meta">ประมาณ 3–4 ชั่วโมง</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 · เกี่ยวกับร้าน ═════════════════════════════════════════════ -->
+<section class="sec sec-dark2" id="about">
+  <div class="shell about">
+    <div class="reveal">
+      <p class="eyebrow">เกี่ยวกับร้าน</p>
+      <h2>511 SALON</h2>
+      <p class="lede">เราเปิดร้านจากงานที่คนอื่นบอกว่าทำไม่ได้ — ผมฟอกจนขาด ผมยืดซ้ำหลายรอบ ผมดัดจนแห้ง งานพวกนี้คือสิ่งที่เราทำทุกวันจนกลายเป็นความถนัดของร้าน</p>
+      <p class="lede">ก่อนเริ่มทุกครั้งเราจะดูสภาพผมจริงก่อน แล้วบอกตรง ๆ ว่าทำอะไรได้แค่ไหน ใช้เวลาเท่าไร และราคาสุดท้ายเท่าไร ถ้าประเมินแล้วผมยังไม่พร้อม เราจะบอกให้พักผมก่อนแทนที่จะรับงานไว้</p>
+      <!-- TODO(ยืนยัน): เปลี่ยนสองย่อหน้าบนเป็นเรื่องจริงของร้าน (เปิดปีไหน ใครเป็นช่างหลัก ความถนัด) -->
+      <p class="lede">ตอนนี้เปิดสองสาขา ทั้งบางปู–ตำหรุ และ BTS เคหะฯ เปิดทุกวันตั้งแต่ 9 โมง วอล์คอินได้ หรือทักไลน์จองคิวล่วงหน้า</p>
+    </div>
+
+    <ul class="reasons reveal reveal-d1">
+      <li>
+        <h3>ราคาเดียว ไม่บวกตามความยาว</h3>
+        <p>ยืดเคราตินสั้นหรือยาวก็ ฿1,000 เท่ากัน รวมตัดแต่งและบำรุงทุกขั้นตอนแล้ว</p>
+      </li>
+      <li>
+        <h3>ประเมินสภาพผมก่อนทุกครั้ง</h3>
+        <p>ดูของจริงก่อนตกลง ถ้าผมยังไม่พร้อมเราบอกให้พักก่อน ไม่ฝืนรับงาน</p>
+      </li>
+      <li>
+        <h3>บอกเวลาที่ใช้ก่อนเริ่ม</h3>
+        <p>รู้ตั้งแต่แรกว่าต้องอยู่ในร้านกี่ชั่วโมง จะได้วางแผนวันได้ถูก</p>
+      </li>
+      <li>
+        <h3>สอนดูแลต่อที่บ้าน</h3>
+        <p>ก่อนกลับเราบอกวิธีสระ วิธีเป่า และสิ่งที่ต้องเลี่ยง เพื่อให้ทรงอยู่ได้นานที่สุด</p>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══ 09 · สาขา ══════════════════════════════════════════════════════ -->
+<section class="sec sec-light" id="branches">
+  <div class="shell">
+    <div class="sechead reveal">
+      <p class="eyebrow">สาขา</p>
+      <h2>สองสาขาในสมุทรปราการ</h2>
+      <p class="lede">เลือกสาขาที่เดินทางสะดวกกว่า ราคาและบริการเหมือนกันทั้งสองที่</p>
+    </div>
+
+    <div class="grid-branch">
+      <article class="branch reveal">
+        <img src="assets/img/placeholder/branch-keha.svg" alt="หน้าร้าน 511 SALON สาขา BTS เคหะฯ" width="1200" height="800" loading="lazy" decoding="async">
+        <div class="body">
+          <h3>สาขา BTS เคหะฯ</h3>
+          <!-- TODO(ยืนยัน): ที่อยู่เต็ม + รหัสไปรษณีย์ + จุดสังเกต + ที่จอดรถ -->
+          <address>ใกล้สถานี BTS เคหะสมุทรปราการ<br>อ.เมืองสมุทรปราการ จ.สมุทรปราการ</address>
+          <dl class="rows">
+            <dt>โทร</dt><dd><a href="tel:+66632649642" data-ev="click_phone" data-ev-where="branch_keha">063-264-9642</a></dd>
+            <dt>เวลา</dt><dd class="num">ทุกวัน 9:00–20:00 น.</dd>
+            <dt>เดินทาง</dt><dd>เดินจากสถานี BTS เคหะฯ ประมาณ 3 นาที<sup>2</sup></dd>
+          </dl>
+          <div class="acts">
+            <a class="btn btn-line btn-sm" href="https://line.me/R/ti/p/@511salon" rel="noopener" data-ev="click_line" data-ev-where="branch_keha">จองสาขานี้</a>
+            <!-- TODO(ยืนยัน): เปลี่ยนเป็นลิงก์ Google Maps ของสาขาจริง -->
+            <a class="btn btn-ghost-l btn-sm" href="https://maps.google.com/?q=511+SALON+เคหะสมุทรปราการ" rel="noopener" data-ev="click_map" data-ev-where="branch_keha">เปิดใน Google Maps</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="branch reveal reveal-d1">
+        <img src="assets/img/placeholder/branch-bangpu.svg" alt="หน้าร้าน 511 SALON สาขาบางปู" width="1200" height="800" loading="lazy" decoding="async">
+        <div class="body">
+          <h3>สาขาบางปู–ตำหรุ</h3>
+          <!-- TODO(ยืนยัน): ที่อยู่เต็ม + รหัสไปรษณีย์ + จุดสังเกต + ที่จอดรถ -->
+          <address>ย่านบางปูใหม่–ตำหรุ<br>อ.เมืองสมุทรปราการ จ.สมุทรปราการ</address>
+          <dl class="rows">
+            <dt>โทร</dt><dd><a href="tel:+66944249394" data-ev="click_phone" data-ev-where="branch_bangpu">094-424-9394</a></dd>
+            <dt>เวลา</dt><dd class="num">ทุกวัน 9:00–20:00 น.</dd>
+            <dt>เดินทาง</dt><dd>มีที่จอดรถหน้าร้าน</dd>
+          </dl>
+          <div class="acts">
+            <a class="btn btn-line btn-sm" href="https://line.me/R/ti/p/@511salon" rel="noopener" data-ev="click_line" data-ev-where="branch_bangpu">จองสาขานี้</a>
+            <a class="btn btn-ghost-l btn-sm" href="https://maps.google.com/?q=511+SALON+บางปู" rel="noopener" data-ev="click_map" data-ev-where="branch_bangpu">เปิดใน Google Maps</a>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 · ปิดการขาย ═════════════════════════════════════════════════ -->
+<section class="sec sec-dark cta" id="booking">
+  <div class="shell">
+    <p class="eyebrow reveal">จองคิว</p>
+    <h2 class="reveal">ส่งรูปผมมาให้ดูก่อนได้เลย</h2>
+    <p class="lede reveal reveal-d1">ทักไลน์มาพร้อมรูปผมตอนนี้ เราประเมินให้ก่อนว่าทำอะไรได้บ้าง ใช้เวลาเท่าไร และราคาเท่าไร ก่อนที่จะเดินทางมา</p>
+    <div class="btns reveal reveal-d2">
+      <a class="btn btn-line" href="https://line.me/R/ti/p/@511salon" rel="noopener" data-ev="click_line" data-ev-where="cta">ทักไลน์ @511salon</a>
+      <a class="btn btn-ghost-d" href="tel:+66632649642" data-ev="click_phone" data-ev-where="cta">โทรสาขาเคหะฯ</a>
+      <a class="btn btn-ghost-d" href="tel:+66944249394" data-ev="click_phone" data-ev-where="cta">โทรสาขาบางปู</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ═══ ฟุตเตอร์ ═══════════════════════════════════════════════════════ -->
+<footer class="foot">
+  <div class="shell">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="#top">5<b>1</b>1 SALON</a>
+        <p style="margin-top:14px;max-width:30ch">ร้านทำผมสมุทรปราการ รับซ่อมผมเสียจากการฟอกและดัด เปิดทุกวัน 9 โมง</p>
+      </div>
+      <div>
+        <h3>บริการ</h3>
+        <ul>
+          <li><a href="#services">ยืดเคราติน</a></li>
+          <li><a href="#services">เคราตินสด</a></li>
+          <li><a href="#services">ยืดวอลลุ่ม</a></li>
+          <li><a href="#services">ดัดดิจิตอล</a></li>
+          <li><a href="#services">ทำสีผม</a></li>
+          <li><a href="#services">ฟอกสี + เชื่อมแกนผม</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>สาขา BTS เคหะฯ</h3>
+        <address>
+          อ.เมืองสมุทรปราการ จ.สมุทรปราการ<br>
+          <a href="tel:+66632649642">063-264-9642</a><br>
+          ทุกวัน 9:00–20:00 น.
+        </address>
+      </div>
+      <div>
+        <h3>สาขาบางปู–ตำหรุ</h3>
+        <address>
+          อ.เมืองสมุทรปราการ จ.สมุทรปราการ<br>
+          <a href="tel:+66944249394">094-424-9394</a><br>
+          ทุกวัน 9:00–20:00 น.
+        </address>
+      </div>
+      <div>
+        <h3>ติดตาม</h3>
+        <ul>
+          <li><a href="https://line.me/R/ti/p/@511salon" rel="noopener" data-ev="click_line" data-ev-where="footer">LINE @511salon</a></li>
+          <li><a href="https://www.facebook.com/p/511-SALON-61558333424240/" rel="noopener">Facebook</a></li>
+          <li><a href="https://www.tiktok.com/@511.salon" rel="noopener">TikTok สาขาเคหะฯ</a></li>
+          <li><a href="https://www.tiktok.com/@511salon.bangpu" rel="noopener">TikTok สาขาบางปู</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <ol class="footnotes">
+      <li>1. ราคาที่แสดงเป็นราคาเริ่มต้นและรวมตัดแต่งกับบำรุงทุกขั้นตอนแล้ว หากสภาพผมทำให้ต้องเพิ่มขั้นตอน ทางร้านจะแจ้งและตกลงราคาก่อนเริ่มงานเสมอ</li>
+      <li>2. ระยะเวลาเดินทางเป็นค่าโดยประมาณ ขึ้นอยู่กับทางออกของสถานีที่ใช้</li>
+      <li>3. ภาพผลงานทั้งหมดเป็นของลูกค้าจริงที่ให้ความยินยอมเผยแพร่แล้ว ผลลัพธ์ที่ได้ขึ้นอยู่กับสภาพผมเดิมของแต่ละคน</li>
+    </ol>
+
+    <div class="foot-base">
+      <span>© 2569 511 SALON</span>
+      <span>ข้อมูลราคาอัปเดต สิงหาคม 2569</span>
+    </div>
+  </div>
+</footer>
+
+<!-- แถบจองตรึงล่าง (มือถือ) -->
+<div class="bookbar">
+  <a class="btn btn-line" href="https://line.me/R/ti/p/@511salon" rel="noopener" data-ev="click_line" data-ev-where="bookbar">ทักไลน์จองคิว</a>
+  <a class="btn btn-ghost-d" href="tel:+66632649642" data-ev="click_phone" data-ev-where="bookbar">โทร</a>
+</div>
+
+<script type="module" src="assets/js/main.js"></script>
+</body>
+</html>
