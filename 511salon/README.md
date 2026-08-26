@@ -8,6 +8,8 @@
 
 ---
 
+> เริ่มงานครั้งแรก อ่าน [CLAUDE.md](CLAUDE.md) ก่อน — สรุปสถานะ ข้อควรระวัง และวิธีตรวจก่อน commit
+
 ## ดูหน้าเว็บ
 
 ```bash
@@ -47,9 +49,10 @@ python3 -m http.server 8765
 ภาพอะไรและขนาดเท่าไร เมื่อมีภาพจริงแล้วไม่ต้องแก้ HTML เอง:
 
 ```bash
-pip install pillow
-# วางไฟล์ต้นฉบับไว้ที่ assets/img/_originals/ ตั้งชื่อตามช่อง เช่น hero.jpg, work-01.jpg
-python3 tools/process-photos.py
+pip3 install pillow
+python3 tools/process-photos.py --list                 # ช่องไหนยังขาด
+python3 tools/process-photos.py                        # ใช้ assets/img/_originals/
+python3 tools/process-photos.py --from ~/รูปร้าน hero=IMG_1234.jpg   # หรือชี้โฟลเดอร์เอง
 ```
 
 สคริปต์จะครอบตัดตามสัดส่วนของแต่ละช่อง ย่อเป็น 480/960/1600 แปลงเป็น AVIF + WebP + JPG

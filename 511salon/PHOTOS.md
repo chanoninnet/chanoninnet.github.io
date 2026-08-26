@@ -86,11 +86,22 @@ LINE หรือแคปหน้าจอจาก TikTok — ภาพพว
 ## 5. รันอะไร
 
 ```bash
-pip install pillow                       # ครั้งแรกครั้งเดียว
+pip3 install pillow                      # ครั้งแรกครั้งเดียว
 cd 511salon
-python3 tools/process-photos.py          # ทำทุกช่องที่มีไฟล์ต้นฉบับ
-python3 tools/process-photos.py hero work-01   # หรือระบุเฉพาะบางช่อง
+
+python3 tools/process-photos.py --list         # ช่องไหนมีภาพจริงแล้ว ช่องไหนยังขาด
+python3 tools/process-photos.py                # ทำทุกช่องที่มีไฟล์ตั้งชื่อตรงกับช่อง
+python3 tools/process-photos.py hero work-01   # เฉพาะบางช่อง
 python3 tools/process-photos.py --dry-run      # ดูก่อนว่าจะทำอะไร ยังไม่แตะไฟล์
+```
+
+**ทำงานบนเครื่องตัวเอง** ไม่ต้องก็อปไฟล์เข้ามาก่อน ชี้ไปที่โฟลเดอร์ภาพได้ตรง ๆ
+และจับไฟล์ชื่ออะไรก็ได้เข้าช่องเองด้วย `<ช่อง>=<ชื่อไฟล์>`
+
+```bash
+python3 tools/process-photos.py --from ~/MyProjects/hair-photo --list
+python3 tools/process-photos.py --from ~/MyProjects/hair-photo \
+    hero=IMG_1234.jpg hero-portrait=IMG_1235.jpg work-05=IMG_1240.jpg
 ```
 
 สคริปต์จะ

@@ -2,9 +2,14 @@
 """แปลงภาพถ่ายจริงเป็นชุดไฟล์สำหรับเว็บ แล้วเปลี่ยน index.html ให้ใช้ภาพนั้น
 
     pip install pillow
-    python3 tools/process-photos.py            # ทำทุกช่องที่มีไฟล์ต้นฉบับ
-    python3 tools/process-photos.py hero work-01
-    python3 tools/process-photos.py --dry-run  # ดูว่าจะทำอะไรบ้าง โดยยังไม่แตะไฟล์
+    python3 tools/process-photos.py                 # ทำทุกช่องที่มีไฟล์ต้นฉบับ
+    python3 tools/process-photos.py hero work-01    # เฉพาะบางช่อง
+    python3 tools/process-photos.py --list          # ดูว่าช่องไหนมีภาพจริงแล้วบ้าง
+    python3 tools/process-photos.py --dry-run       # ดูว่าจะทำอะไร โดยยังไม่แตะไฟล์
+
+    # ชี้ไปโฟลเดอร์ภาพที่ไหนก็ได้ ไม่ต้องก็อปมาก่อน และจับไฟล์เข้าช่องเองได้
+    python3 tools/process-photos.py --from ~/MyProjects/hair-photo \
+        hero=IMG_1234.jpg work-05=IMG_1240.jpg
 
 วิธีใช้
   1. วางภาพต้นฉบับไว้ที่ assets/img/_originals/ ตั้งชื่อตามช่อง เช่น hero.jpg,
@@ -52,10 +57,13 @@ SLOTS = {
 EXTS = (".jpg", ".jpeg", ".png", ".webp", ".heic", ".tif", ".tiff")
 
 
-def find_source(slot):
+def find_source(slot, src_dir, explicit=None):
+    if explicit:
+        path = explicit if os.path.isabs(explicit) else os.path.join(src_dir, explicit)
+        return path if os.path.exists(path) else None
     for ext in EXTS:
         for name in (slot + ext, slot + ext.upper()):
-            path = os.path.join(SRC, name)
+            path = os.path.join(src_dir, name)
             if os.path.exists(path):
                 return path
     return None
@@ -193,21 +201,54 @@ def rewrite_html(slots, dry):
     return changed
 
 
+def parse_argv(argv):
+    """คืน (ช่องที่ขอ, ไฟล์ที่ระบุเจาะจง, โฟลเดอร์ต้นทาง, ธง)"""
+    wanted, explicit, src_dir, flags, expect_dir = [], {}, SRC, set(), False
+    for a in argv:
+        if expect_dir:
+            src_dir, expect_dir = os.path.expanduser(a), False
+        elif a in ("--from", "-f"):
+            expect_dir = True
+        elif a.startswith("--from="):
+            src_dir = os.path.expanduser(a.split("=", 1)[1])
+        elif a.startswith("-"):
+            flags.add(a)
+        elif "=" in a:
+            slot, filename = a.split("=", 1)
+            wanted.append(slot)
+            explicit[slot] = os.path.expanduser(filename)
+        else:
+            wanted.append(a)
+    return wanted, explicit, src_dir, flags
+
+
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("-")]
-    dry = "--dry-run" in sys.argv
-    os.makedirs(SRC, exist_ok=True)
-    focus_path = os.path.join(SRC, "focus.json")
+    wanted, explicit, src_dir, flags = parse_argv(sys.argv[1:])
+    dry = "--dry-run" in flags
+    focus_path = os.path.join(src_dir, "focus.json")
+    if not os.path.exists(focus_path):
+        focus_path = os.path.join(SRC, "focus.json")
     focus_map = json.load(open(focus_path, encoding="utf-8")) if os.path.exists(focus_path) else {}
 
-    wanted = args or list(SLOTS)
+    if "--list" in flags:
+        print(f"ต้นทาง: {src_dir}\n")
+        for slot in SLOTS:
+            done_ = "ใช้ภาพจริงแล้ว" if widths_for(slot) else "ยังเป็นภาพชั่วคราว"
+            src = find_source(slot, src_dir)
+            print(f"  {slot:16s} {done_:18s} {'ต้นฉบับ: ' + os.path.basename(src) if src else ''}")
+        return
+
     unknown = [s for s in wanted if s not in SLOTS]
     if unknown:
-        sys.exit(f"ไม่รู้จักช่อง: {', '.join(unknown)}\nดูรายชื่อช่องทั้งหมดใน PHOTOS.md")
+        sys.exit(f"ไม่รู้จักช่อง: {', '.join(unknown)}\nดูรายชื่อช่องทั้งหมดใน PHOTOS.md หรือรัน --list")
+    if not wanted:
+        wanted = list(SLOTS)
+    if not os.path.isdir(src_dir):
+        sys.exit(f"ไม่พบโฟลเดอร์ต้นทาง: {src_dir}")
 
     done, missing = [], []
     for slot in wanted:
-        path = find_source(slot)
+        path = find_source(slot, src_dir, explicit.get(slot))
         if not path:
             missing.append(slot)
             continue
@@ -219,8 +260,11 @@ def main():
     print(f"\nแปลงแล้ว {len(done)} ช่อง · แก้ index.html {len(changed)} จุด" + ("  (dry-run ไม่ได้เขียนไฟล์)" if dry else ""))
     if missing:
         print(f"ยังไม่มีภาพต้นฉบับอีก {len(missing)} ช่อง: {', '.join(missing[:8])}" + (" …" if len(missing) > 8 else ""))
-        print(f"วางไฟล์ไว้ที่ {os.path.relpath(SRC, ROOT)}/ ตั้งชื่อตามช่อง")
+        print(f"หาใน {src_dir} ตามชื่อช่อง — หรือระบุไฟล์เองแบบ  <ช่อง>=<ชื่อไฟล์>")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except BrokenPipeError:
+        pass   # ต่อท่อเข้า head/grep แล้วปลายทางปิดก่อน ไม่ใช่ข้อผิดพลาด

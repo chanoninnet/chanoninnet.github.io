@@ -30,6 +30,13 @@ def main():
     css = re.sub(r"url\(\.\./fonts/([^)]+)\)",
                  lambda m: f"url({datauri('assets/fonts/' + m.group(1))})", css)
 
+    # ยุบ <picture> เหลือ <img> ตัวเดียว: ไฟล์เดียวต้องแบกทุกขนาดทุกฟอร์แมต
+    # แล้ว base64 บวกอีก 33% จะทะลุเพดานขนาดของหน้าพรีวิวทันที
+    # เว็บจริงยังใช้ <picture> ครบ srcset เหมือนเดิม นี่แก้เฉพาะไฟล์พรีวิว
+    html, n = re.subn(r"<picture>.*?(<img\b[^>]*>).*?</picture>", r"\1", html, flags=re.S)
+    if n:
+        print(f"  ยุบ <picture> {n} จุดเหลือ JPG ขนาดเดียว (เฉพาะไฟล์พรีวิว)")
+
     # ภาพทุกอันใน src="..." และใน data-before / data-after ของแท็บเทียบภาพ
     def swap(m):
         attr, path = m.group(1), m.group(2)
@@ -37,10 +44,12 @@ def main():
     html = re.sub(r'(src|data-before|data-after)="(assets/img/[^"]+)"', swap, html)
 
     # แทนที่ลิงก์ไฟล์ภายนอกด้วยเนื้อไฟล์
+    # ต้องส่ง replacement เป็น lambda ไม่ใช่สตริง เพราะเนื้อ CSS/JS มี backslash
+    # (เช่น regex \d ใน main.js) ซึ่ง re.sub จะตีความเป็น escape ของ template แล้วพัง
     html = re.sub(r'\s*<link rel="stylesheet" href="assets/css/main\.css">',
-                  f"\n<style>\n{css}\n</style>", html)
+                  lambda _m: f"\n<style>\n{css}\n</style>", html)
     html = re.sub(r'<script type="module" src="assets/js/main\.js"></script>',
-                  f'<script type="module">\n{js}\n</script>', html)
+                  lambda _m: f'<script type="module">\n{js}\n</script>', html)
     # preload/favicon ที่ชี้ไฟล์แยกไม่มีความหมายในไฟล์เดียว
     html = re.sub(r'\s*<link rel="(?:preload|icon)"[^>]*>', "", html)
 
