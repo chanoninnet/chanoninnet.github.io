@@ -16,7 +16,8 @@ HTML + CSS + JavaScript ล้วน **ไม่มี build step ไม่ม�
 
 ```bash
 git fetch origin && git checkout claude/511-salon-website-seo-xkxe3g
-pip3 install pillow          # ใช้เฉพาะตอนแปลงภาพ
+python3 -m venv .venv && source .venv/bin/activate
+pip install pillow pillow-heif   # pillow-heif ใช้อ่านไฟล์ .heic จาก iPhone
 cd 511salon && python3 -m http.server 8765     # เปิด http://localhost:8765/
 ```
 

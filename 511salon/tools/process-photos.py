@@ -243,6 +243,8 @@ def main():
         sys.exit(f"ไม่รู้จักช่อง: {', '.join(unknown)}\nดูรายชื่อช่องทั้งหมดใน PHOTOS.md หรือรัน --list")
     if not wanted:
         wanted = list(SLOTS)
+    if src_dir == SRC:
+        os.makedirs(SRC, exist_ok=True)   # โคลนใหม่จะยังไม่มีโฟลเดอร์นี้ เพราะอยู่ใน .gitignore
     if not os.path.isdir(src_dir):
         sys.exit(f"ไม่พบโฟลเดอร์ต้นทาง: {src_dir}")
 

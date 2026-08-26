@@ -86,7 +86,7 @@ LINE หรือแคปหน้าจอจาก TikTok — ภาพพว
 ## 5. รันอะไร
 
 ```bash
-pip3 install pillow                      # ครั้งแรกครั้งเดียว
+pip install pillow pillow-heif           # ครั้งแรกครั้งเดียว (heif = อ่าน .heic ได้)
 cd 511salon
 
 python3 tools/process-photos.py --list         # ช่องไหนมีภาพจริงแล้ว ช่องไหนยังขาด

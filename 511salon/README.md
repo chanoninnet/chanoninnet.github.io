@@ -49,7 +49,7 @@ python3 -m http.server 8765
 ภาพอะไรและขนาดเท่าไร เมื่อมีภาพจริงแล้วไม่ต้องแก้ HTML เอง:
 
 ```bash
-pip3 install pillow
+pip install pillow pillow-heif
 python3 tools/process-photos.py --list                 # ช่องไหนยังขาด
 python3 tools/process-photos.py                        # ใช้ assets/img/_originals/
 python3 tools/process-photos.py --from ~/รูปร้าน hero=IMG_1234.jpg   # หรือชี้โฟลเดอร์เอง
