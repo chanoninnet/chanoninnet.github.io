@@ -86,6 +86,9 @@ body{
   -webkit-font-smoothing:antialiased;overflow-x:hidden;
 }
 img,svg,video{display:block;max-width:100%;height:auto}
+/* <picture> เป็นแค่ตัวห่อสำหรับเลือกไฟล์ ห้ามให้มันกลายเป็นกล่องในเลย์เอาต์
+   ไม่งั้น .hero-img ที่วางแบบ absolute และ grid ที่นับ img เป็นลูก จะเพี้ยน */
+picture{display:contents}
 a{color:inherit}
 button{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:4px}

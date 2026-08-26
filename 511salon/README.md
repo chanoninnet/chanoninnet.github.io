@@ -43,50 +43,22 @@ python3 -m http.server 8765
 
 ## เปลี่ยนภาพชั่วคราวเป็นภาพจริง
 
-ทุกช่องภาพในหน้าตอนนี้ชี้ไปที่ `assets/img/placeholder/<ชื่อ>.svg`
-ในภาพชั่วคราวเขียนบอกไว้แล้วว่าช่องนั้นต้องใช้ภาพอะไรและขนาดเท่าไร
+ทุกช่องภาพชี้ไปที่ `assets/img/placeholder/<ช่อง>.svg` ซึ่งเขียนบอกไว้ว่าช่องนั้นต้องใช้
+ภาพอะไรและขนาดเท่าไร เมื่อมีภาพจริงแล้วไม่ต้องแก้ HTML เอง:
 
-**ขั้นตอน**
+```bash
+pip install pillow
+# วางไฟล์ต้นฉบับไว้ที่ assets/img/_originals/ ตั้งชื่อตามช่อง เช่น hero.jpg, work-01.jpg
+python3 tools/process-photos.py
+```
 
-1. ส่งออกภาพจริงเป็น AVIF + WebP + JPG อย่างละ 3 ความกว้าง (480 / 960 / 1600)
-   ตั้งชื่อไฟล์ให้บอกเรื่อง เช่น `keratin-before-after-01-960.avif`
-   ไม่ใช่ `IMG_2934.jpg`
-2. วางไว้ใน `assets/img/` (แยกโฟลเดอร์ย่อยได้ตามใจ)
-3. ใน `index.html` เปลี่ยนจาก
+สคริปต์จะครอบตัดตามสัดส่วนของแต่ละช่อง ย่อเป็น 480/960/1600 แปลงเป็น AVIF + WebP + JPG
+แล้วเปลี่ยน `<img>` ในหน้าให้เป็น `<picture>` พร้อม `srcset` โดยคง `alt`/`width`/`height`
+เดิมไว้ครบ รวมถึงตั้ง `preload` ของ hero และ `og:image` ให้ด้วย
 
-   ```html
-   <img src="assets/img/placeholder/work-01.svg"
-        alt="ผมยาวประบ่าหลังยืดเคราติน ตรงเงาไม่ลีบติดหนังศีรษะ"
-        width="1000" height="1250" loading="lazy" decoding="async">
-   ```
+**รายชื่อช่องทั้งหมด สิ่งที่ต้องถ่าย และวิธีส่งไฟล์ อยู่ใน [PHOTOS.md](PHOTOS.md)**
 
-   เป็น
-
-   ```html
-   <picture>
-     <source type="image/avif" sizes="(max-width:860px) 100vw, 25vw"
-             srcset="assets/img/work-01-480.avif 480w,
-                     assets/img/work-01-960.avif 960w,
-                     assets/img/work-01-1600.avif 1600w">
-     <source type="image/webp" sizes="(max-width:860px) 100vw, 25vw"
-             srcset="assets/img/work-01-480.webp 480w,
-                     assets/img/work-01-960.webp 960w,
-                     assets/img/work-01-1600.webp 1600w">
-     <img src="assets/img/work-01-960.jpg"
-          alt="ผมยาวประบ่าหลังยืดเคราติน ตรงเงาไม่ลีบติดหนังศีรษะ"
-          width="1000" height="1250" loading="lazy" decoding="async">
-   </picture>
-   ```
-
-4. เก็บค่า `width`/`height` ไว้เสมอ (กัน CLS) และเก็บ `alt` ภาษาไทยเดิมไว้ —
-   ข้อความ alt เขียนบรรยายภาพจริงแล้ว ใช้ได้ทั้งกับโปรแกรมอ่านหน้าจอและ Google Images
-5. ภาพ hero ต่างจากภาพอื่น: ต้องคง `fetchpriority="high"` ไว้ **และห้ามใส่ `loading="lazy"`**
-   พร้อมแก้ `<link rel="preload" as="image">` ใน `<head>` ให้ชี้ไฟล์ใหม่ — นี่คือ LCP ของหน้า
-6. เปลี่ยนภาพในสไลเดอร์เทียบ ก่อน–หลัง ต้องแก้ทั้งใน `<img>` และใน `data-before` /
-   `data-after` ของปุ่มแท็บ `[data-case]` ด้วย ไม่งั้นพอสลับเคสจะกลับไปเป็นภาพชั่วคราว
-7. ลบโฟลเดอร์ `assets/img/placeholder/` เมื่อไม่มีที่ไหนอ้างถึงแล้ว
-
-**ภาพผลงานต้องได้รับความยินยอมจากลูกค้าในภาพก่อนนำขึ้นเว็บเสมอ** — เชิงอรรถข้อ 3
+ภาพผลงานต้องได้รับความยินยอมจากลูกค้าในภาพก่อนนำขึ้นเว็บเสมอ — เชิงอรรถข้อ 3
 ท้ายหน้าประกาศเรื่องนี้ไว้แล้ว ถ้ายังไม่ได้เก็บความยินยอมต้องแก้ข้อความนั้นด้วย
 
 ---

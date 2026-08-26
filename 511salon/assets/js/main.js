@@ -108,9 +108,20 @@ function initCompare() {
   const box = $('[data-compare]');
   if (!box) return;
   const range = $('.cmp-range', box);
-  const beforeImg = $('.before img', box);
-  const afterImg = $('.after img', box);
+  const beforePane = $('.before', box);
+  const afterPane = $('.after', box);
   const note = $('[data-compare-note]');
+
+  /* ชื่อไฟล์ทุกช่องเป็นรูปแบบ <ช่อง>-<ความกว้าง>.<นามสกุล> การสลับเคสจึงทำได้
+     ด้วยการแทนชื่อช่องในทุก src/srcset ใช้ได้ทั้งตอนเป็นภาพชั่วคราวไฟล์เดียว
+     และตอนเป็น <picture> ที่มี AVIF/WebP/JPG อย่างละสามความกว้าง */
+  const SLOT = /cmp-\d+-(?:before|after)/g;
+  const swapPane = (pane, slot, alt) => {
+    $$('source', pane).forEach((el) => { el.srcset = el.srcset.replace(SLOT, slot); });
+    const img = $('img', pane);
+    img.setAttribute('src', img.getAttribute('src').replace(SLOT, slot));
+    img.alt = alt;
+  };
 
   const setPos = (pct) => {
     const v = Math.max(0, Math.min(100, pct));
@@ -141,10 +152,8 @@ function initCompare() {
     tab.addEventListener('click', () => {
       tabs.forEach((t) => t.setAttribute('aria-selected', String(t === tab)));
       const d = tab.dataset;
-      beforeImg.src = d.before;
-      afterImg.src = d.after;
-      beforeImg.alt = d.altBefore;
-      afterImg.alt = d.altAfter;
+      swapPane(beforePane, d.before, d.altBefore);
+      swapPane(afterPane, d.after, d.altAfter);
       if (note) {
         $('h3', note).textContent = d.title;
         $('p', note).textContent = d.desc;

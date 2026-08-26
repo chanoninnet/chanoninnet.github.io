@@ -1,2 +1,6 @@
 # ไฟล์ที่ build ขึ้นมาเอง สร้างใหม่ได้ด้วย tools/build-singlefile.py
 dist/
+
+# ภาพต้นฉบับก่อนแปลง ไม่ต้องเก็บใน git — ไฟล์ใหญ่และ process-photos.py สร้างผลลัพธ์ให้แล้ว
+assets/img/_originals/
+__pycache__/
