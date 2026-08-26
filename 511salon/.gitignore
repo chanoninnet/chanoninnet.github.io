@@ -1,0 +1,2 @@
+# ไฟล์ที่ build ขึ้นมาเอง สร้างใหม่ได้ด้วย tools/build-singlefile.py
+dist/
