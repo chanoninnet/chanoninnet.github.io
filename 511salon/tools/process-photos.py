@@ -41,7 +41,7 @@ CARD = (3 / 4, "(max-width:860px) 78vw, 290px")
 # hero-portrait เป็นช่องเสริม ถ้ามีไฟล์นี้จะถูกใช้บนจอแคบแทน hero เพราะภาพแนวนอน
 # พอ object-fit:cover ลงจอมือถือแนวตั้ง จะถูกตัดด้านข้างจนเสียองค์ประกอบ
 SLOTS = {
-    "hero":          (3 / 2, "100vw"),
+    "hero":          (3 / 4, "46vw"),
     "hero-portrait": (3 / 4, "100vw"),
     "og":          (1200 / 630, "100vw"),
     "branch-keha": (3 / 2, "(max-width:860px) 100vw, 46vw"),
@@ -62,20 +62,23 @@ def find_source(slot):
 
 
 def crop_to(im, ratio, focus):
-    """ครอบตัดให้ได้สัดส่วนที่ต้องการโดยไม่บีบภาพ"""
+    """ครอบตัดให้ได้สัดส่วนที่ต้องการโดยไม่บีบภาพ
+
+    focus = [x%, y%] หรือ [x%, y%, zoom]
+    zoom > 1 ทำให้กรอบเล็กลง จึงเลื่อนกรอบได้ทั้งสองแกน ใช้ตอนที่อยากให้ตัวแบบ
+    ไปอยู่ฝั่งใดฝั่งหนึ่งของภาพ เช่น hero ที่ต้องเว้นที่ว่างไว้วางพาดหัว
+    """
     w, h = im.size
-    fx, fy = focus
-    if w / h > ratio:                      # ภาพกว้างไป ตัดด้านข้าง
-        new_w = round(h * ratio)
-        left = round((w - new_w) * fx / 100)
-        box = (max(0, min(left, w - new_w)), 0, 0, h)
-        box = (box[0], 0, box[0] + new_w, h)
-    else:                                  # ภาพสูงไป ตัดบนล่าง
-        new_h = round(w / ratio)
-        top = round((h - new_h) * fy / 100)
-        top = max(0, min(top, h - new_h))
-        box = (0, top, w, top + new_h)
-    return im.crop(box)
+    fx, fy = focus[0], focus[1]
+    zoom = focus[2] if len(focus) > 2 else 1.0
+    new_w, new_h = (round(h * ratio), h) if w / h > ratio else (w, round(w / ratio))
+    if zoom > 1:
+        new_w, new_h = round(new_w / zoom), round(new_h / zoom)
+    left = round((w - new_w) * fx / 100)
+    top = round((h - new_h) * fy / 100)
+    left = max(0, min(left, w - new_w))
+    top = max(0, min(top, h - new_h))
+    return im.crop((left, top, left + new_w, top + new_h))
 
 
 def build(slot, path, focus_map, dry):
