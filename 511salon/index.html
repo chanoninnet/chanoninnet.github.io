@@ -6,16 +6,18 @@
 
 <!-- ═══════════════════════════════════════════════════════════════════════
      TODO ก่อนขึ้นโดเมนจริง (511salon.com)
-     1. ลบ <meta name="robots" content="noindex,nofollow"> บรรทัดล่างนี้
+     1. ลบแท็ก robots noindex บรรทัดใต้คอมเมนต์นี้
         (ตอนนี้กันไม่ให้ Google เก็บหน้าพรีวิวบน github.io ไปแข่งกับโดเมนจริง)
      2. เติมค่าที่ทำเครื่องหมาย TODO(ยืนยัน) ทุกจุด — ที่อยู่ พิกัด เบอร์ ลิงก์ LINE
      3. เปลี่ยนภาพใน assets/img/placeholder/ เป็นภาพจริง (ดู README.md)
-     4. ใส่โค้ด GA4 ตรงท้าย <head>
+     4. ใส่โค้ด GA4 ตรงท้าย head
+     5. เบอร์ 094-424-9394 ที่เคยผูกกับสาขาบางปู ถูกถอดออกจากหน้าแล้ว
+        ถ้ายังใช้เบอร์นี้รับสายอยู่ ให้เพิ่มกลับในส่วนที่ตั้งร้านและฟุตเตอร์
      ═══════════════════════════════════════════════════════════════════════ -->
 <meta name="robots" content="noindex,nofollow">
 
-<title>511 SALON ร้านทำผมสมุทรปราการ | ยืดเคราติน 1,000 บางปู–BTS เคหะฯ</title>
-<meta name="description" content="511 SALON ร้านทำผมสมุทรปราการ รับซ่อมผมเสียจากการฟอกและดัด ยืดเคราตินเริ่ม 1,000 บาท สั้น–ยาวราคาเดียว ฟรีตัดแต่งและบำรุงทุกขั้นตอน 2 สาขา บางปูและ BTS เคหะฯ เปิดทุกวัน 9 โมง วอล์คอินได้">
+<title>511 SALON ร้านทำผมสมุทรปราการ | ยืดเคราติน 1,000 ใกล้ BTS เคหะฯ</title>
+<meta name="description" content="511 SALON ร้านทำผมสมุทรปราการ รับซ่อมผมเสียจากการฟอกและดัด ยืดเคราตินเริ่ม 1,000 บาท สั้น–ยาวราคาเดียว ฟรีตัดแต่งและบำรุงทุกขั้นตอน ร้านอยู่ใกล้สถานี BTS เคหะสมุทรปราการ เปิดทุกวัน 9 โมง วอล์คอินได้">
 <link rel="canonical" href="https://511salon.com/">
 <meta name="theme-color" content="#0A0A0B">
 
@@ -23,7 +25,7 @@
 <meta property="og:locale" content="th_TH">
 <meta property="og:site_name" content="511 SALON">
 <meta property="og:title" content="511 SALON — ร้านทำผมสมุทรปราการ ที่ซ่อมผมเสียได้จริง">
-<meta property="og:description" content="ยืดเคราตินเริ่ม 1,000 บาท สั้น–ยาวราคาเดียว ฟรีตัดแต่งและบำรุงทุกขั้นตอน 2 สาขา บางปูและ BTS เคหะฯ เปิดทุกวัน 9 โมง">
+<meta property="og:description" content="ยืดเคราตินเริ่ม 1,000 บาท สั้น–ยาวราคาเดียว ฟรีตัดแต่งและบำรุงทุกขั้นตอน อยู่ใกล้ BTS เคหะสมุทรปราการ เปิดทุกวัน 9 โมง">
 <meta property="og:url" content="https://511salon.com/">
 <meta property="og:image" content="https://511salon.com/assets/img/placeholder/og.svg">
 <meta property="og:image:width" content="1200">
@@ -51,8 +53,7 @@
       "sameAs": [
         "https://www.facebook.com/p/511-SALON-61558333424240/",
         "https://www.tiktok.com/@511.salon",
-        "https://www.tiktok.com/@511salon511",
-        "https://www.tiktok.com/@511salon.bangpu"
+        "https://www.tiktok.com/@511salon511"
       ]
     },
     {
@@ -65,8 +66,8 @@
     },
     {
       "@type": "HairSalon",
-      "@id": "https://511salon.com/#salon-keha",
-      "name": "511 SALON สาขา BTS เคหะฯ",
+      "@id": "https://511salon.com/#salon",
+      "name": "511 SALON",
       "url": "https://511salon.com/",
       "parentOrganization": { "@id": "https://511salon.com/#org" },
       "image": "https://511salon.com/assets/img/placeholder/branch-keha.svg",
@@ -76,7 +77,7 @@
       "paymentAccepted": "เงินสด, โอนผ่านธนาคาร, พร้อมเพย์",
       "address": {
         "@type": "PostalAddress",
-        "streetAddress": "TODO(ยืนยัน): ที่อยู่เต็มสาขา BTS เคหะฯ",
+        "streetAddress": "TODO(ยืนยัน): ที่อยู่เต็มของร้าน",
         "addressLocality": "เมืองสมุทรปราการ",
         "addressRegion": "สมุทรปราการ",
         "postalCode": "TODO",
@@ -97,32 +98,6 @@
         { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "ทำสีผม" }, "price": "1299", "priceCurrency": "THB" },
         { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "ฟอกสีผม + เชื่อมแกนผม" }, "price": "1299", "priceCurrency": "THB" }
       ]
-    },
-    {
-      "@type": "HairSalon",
-      "@id": "https://511salon.com/#salon-bangpu",
-      "name": "511 SALON สาขาบางปู",
-      "url": "https://511salon.com/",
-      "parentOrganization": { "@id": "https://511salon.com/#org" },
-      "image": "https://511salon.com/assets/img/placeholder/branch-bangpu.svg",
-      "telephone": "+66944249394",
-      "priceRange": "฿฿",
-      "currenciesAccepted": "THB",
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "TODO(ยืนยัน): ที่อยู่เต็มสาขาบางปู",
-        "addressLocality": "เมืองสมุทรปราการ",
-        "addressRegion": "สมุทรปราการ",
-        "postalCode": "TODO",
-        "addressCountry": "TH"
-      },
-      "openingHoursSpecification": [{
-        "@type": "OpeningHoursSpecification",
-        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
-        "opens": "09:00",
-        "closes": "20:00"
-      }],
-      "areaServed": ["บางปู","บางปูใหม่","ตำหรุ","สมุทรปราการ"]
     }
   ]
 }
@@ -140,7 +115,7 @@
       <li><a href="#work">ผลงาน</a></li>
       <li><a href="#services">บริการและราคา</a></li>
       <li><a href="#about">เกี่ยวกับร้าน</a></li>
-      <li><a href="#branches">สาขา</a></li>
+      <li><a href="#location">ที่ตั้งร้าน</a></li>
     </ul>
     <!-- TODO(ยืนยัน): เปลี่ยนเป็นลิงก์ LINE OA ตัวจริง เช่น https://lin.ee/xxxxxxx -->
     <a class="btn btn-line btn-sm" href="https://line.me/R/ti/p/@511salon"
@@ -167,7 +142,7 @@
     <p class="hero-meta">
       <span>เปิดทุกวัน 9:00 น.</span>
       <span>วอล์คอินได้</span>
-      <span>2 สาขา · บางปู · BTS เคหะฯ</span>
+      <span>ใกล้ BTS เคหะฯ</span>
     </p>
     <div class="hero-cta">
       <a class="btn btn-line" href="https://line.me/R/ti/p/@511salon" data-ev="click_line" data-ev-where="hero" rel="noopener">ทักไลน์จองคิว</a>
@@ -198,8 +173,8 @@
         <dd>ยืดเคราติน ราคาเดียวทุกความยาว ไม่บวกเพิ่มตามความยาวผม<sup>1</sup></dd>
       </div>
       <div class="tile">
-        <dt><span data-count="2">2</span> <small>สาขา</small></dt>
-        <dd>บางปู–ตำหรุ และ BTS เคหะฯ เลือกสาขาที่สะดวกกว่าได้</dd>
+        <dt>ฟรี</dt>
+        <dd>ตัดแต่งและบำรุงทุกขั้นตอน รวมอยู่ในราคาแล้วไม่คิดเพิ่ม<sup>1</sup></dd>
       </div>
       <div class="tile">
         <dt>9:00 <small>ทุกวัน</small></dt>
@@ -328,7 +303,7 @@
   <div class="shell">
     <div class="sechead reveal">
       <p class="eyebrow">แกลเลอรี</p>
-      <h2>ผลงานล่าสุดจากทั้งสองสาขา</h2>
+      <h2>ผลงานล่าสุดจากหน้าร้าน</h2>
       <p class="lede">แสดง <span data-filter-count>9</span> ผลงาน — กรองตามบริการที่สนใจได้</p>
     </div>
 
@@ -343,46 +318,45 @@
     <div class="grid-work">
       <figure class="work reveal" data-tags="straighten repair">
         <img src="assets/img/placeholder/work-01.svg" alt="ผมยาวประบ่าหลังยืดเคราติน ตรงเงาไม่ลีบติดหนังศีรษะ" width="1000" height="1250" loading="lazy" decoding="async">
-        <figcaption><b>ยืดเคราติน</b>ผมฟอกประบ่า · สาขาบางปู</figcaption>
+        <figcaption><b>ยืดเคราติน</b>ผมฟอกประบ่า</figcaption>
       </figure>
       <figure class="work reveal reveal-d1" data-tags="straighten">
         <img src="assets/img/placeholder/work-02.svg" alt="ผมยาวหลังยืดวอลลุ่ม โคนผมยังพองปลายตรง" width="1000" height="1250" loading="lazy" decoding="async">
-        <figcaption><b>ยืดวอลลุ่ม</b>ผมยาวเลยสะบัก · สาขา BTS เคหะฯ</figcaption>
+        <figcaption><b>ยืดวอลลุ่ม</b>ผมยาวเลยสะบัก</figcaption>
       </figure>
       <figure class="work reveal reveal-d2" data-tags="perm">
         <img src="assets/img/placeholder/work-03.svg" alt="ลอนผมจากการดัดดิจิตอล ลอนกลางถึงปลายเป็นระเบียบ" width="1000" height="1250" loading="lazy" decoding="async">
-        <figcaption><b>ดัดดิจิตอล</b>ลอนกลาง–ปลาย · สาขาบางปู</figcaption>
+        <figcaption><b>ดัดดิจิตอล</b>ลอนกลาง–ปลาย</figcaption>
       </figure>
       <figure class="work reveal" data-tags="color">
         <img src="assets/img/placeholder/work-04.svg" alt="ผมย้อมโทนน้ำตาลประกายหม่นทั้งหัว" width="1000" height="1250" loading="lazy" decoding="async">
-        <figcaption><b>ทำสีผม</b>โทนน้ำตาลหม่น · สาขา BTS เคหะฯ</figcaption>
+        <figcaption><b>ทำสีผม</b>โทนน้ำตาลประกายหม่น</figcaption>
       </figure>
       <figure class="work reveal reveal-d1" data-tags="color repair">
         <img src="assets/img/placeholder/work-05.svg" alt="ผมหลังฟอกสีพร้อมเชื่อมแกนผม ปลายผมยังไม่ขาดยุ่ย" width="1000" height="1250" loading="lazy" decoding="async">
-        <figcaption><b>ฟอกสี + เชื่อมแกนผม</b>ฟอกสองรอบ · สาขาบางปู</figcaption>
+        <figcaption><b>ฟอกสี + เชื่อมแกนผม</b>ฟอกสองรอบ</figcaption>
       </figure>
       <figure class="work reveal reveal-d2" data-tags="repair">
         <img src="assets/img/placeholder/work-06.svg" alt="ผมที่เคยขาดเป็นช่วงจากการฟอก หลังทำเคราตินสดแล้วเส้นเรียบต่อเนื่อง" width="1000" height="1250" loading="lazy" decoding="async">
-        <figcaption><b>เคราตินสด</b>ผมขาดช็อตจากการฟอก · สาขา BTS เคหะฯ</figcaption>
+        <figcaption><b>เคราตินสด</b>ผมขาดช็อตจากการฟอก</figcaption>
       </figure>
       <figure class="work reveal" data-tags="straighten perm">
         <img src="assets/img/placeholder/work-07.svg" alt="ผมยืดโคนดัดปลาย โคนตรงปลายเป็นลอนใหญ่" width="1000" height="1250" loading="lazy" decoding="async">
-        <figcaption><b>ยืดโคนดัดปลาย</b>ลอนใหญ่ปลายผม · สาขาบางปู</figcaption>
+        <figcaption><b>ยืดโคนดัดปลาย</b>ลอนใหญ่ที่ปลายผม</figcaption>
       </figure>
       <figure class="work reveal reveal-d1" data-tags="straighten">
         <img src="assets/img/placeholder/work-08.svg" alt="ผมสั้นระดับคางหลังยืดเคราติน ทรงบ๊อบเข้ารูป" width="1000" height="1250" loading="lazy" decoding="async">
-        <figcaption><b>ยืดเคราติน</b>ทรงบ๊อบสั้น · สาขา BTS เคหะฯ</figcaption>
+        <figcaption><b>ยืดเคราติน</b>ทรงบ๊อบระดับคาง</figcaption>
       </figure>
       <figure class="work reveal reveal-d2" data-tags="color">
         <img src="assets/img/placeholder/work-09.svg" alt="ผมทำสีปิดผมขาวโทนน้ำตาลเข้มเสมอกันทั้งหัว" width="1000" height="1250" loading="lazy" decoding="async">
-        <figcaption><b>ทำสีปิดผมขาว</b>โทนน้ำตาลเข้ม · สาขาบางปู</figcaption>
+        <figcaption><b>ทำสีปิดผมขาว</b>โทนน้ำตาลเข้ม</figcaption>
       </figure>
     </div>
 
     <div class="gallery-more reveal">
-      <p>ดูผลงานใหม่ทุกสัปดาห์ได้ที่ TikTok ของแต่ละสาขา</p>
-      <a class="btn btn-ghost-l btn-sm" href="https://www.tiktok.com/@511.salon" rel="noopener" data-ev="click_social" data-ev-where="gallery">TikTok สาขาเคหะฯ</a>
-      <a class="btn btn-ghost-l btn-sm" href="https://www.tiktok.com/@511salon.bangpu" rel="noopener" data-ev="click_social" data-ev-where="gallery">TikTok สาขาบางปู</a>
+      <p>ลงผลงานใหม่ทุกสัปดาห์บน TikTok</p>
+      <a class="btn btn-ghost-l btn-sm" href="https://www.tiktok.com/@511.salon" rel="noopener" data-ev="click_social" data-ev-where="gallery">ดู TikTok ของร้าน</a>
     </div>
   </div>
 </section>
@@ -458,7 +432,7 @@
       <p class="lede">เราเปิดร้านจากงานที่คนอื่นบอกว่าทำไม่ได้ — ผมฟอกจนขาด ผมยืดซ้ำหลายรอบ ผมดัดจนแห้ง งานพวกนี้คือสิ่งที่เราทำทุกวันจนกลายเป็นความถนัดของร้าน</p>
       <p class="lede">ก่อนเริ่มทุกครั้งเราจะดูสภาพผมจริงก่อน แล้วบอกตรง ๆ ว่าทำอะไรได้แค่ไหน ใช้เวลาเท่าไร และราคาสุดท้ายเท่าไร ถ้าประเมินแล้วผมยังไม่พร้อม เราจะบอกให้พักผมก่อนแทนที่จะรับงานไว้</p>
       <!-- TODO(ยืนยัน): เปลี่ยนสองย่อหน้าบนเป็นเรื่องจริงของร้าน (เปิดปีไหน ใครเป็นช่างหลัก ความถนัด) -->
-      <p class="lede">ตอนนี้เปิดสองสาขา ทั้งบางปู–ตำหรุ และ BTS เคหะฯ เปิดทุกวันตั้งแต่ 9 โมง วอล์คอินได้ หรือทักไลน์จองคิวล่วงหน้า</p>
+      <p class="lede">ร้านอยู่ใกล้สถานี BTS เคหะสมุทรปราการ เปิดทุกวันตั้งแต่ 9 โมง วอล์คอินได้ หรือทักไลน์จองคิวล่วงหน้าก็ได้</p>
     </div>
 
     <ul class="reasons reveal reveal-d1">
@@ -482,53 +456,34 @@
   </div>
 </section>
 
-<!-- ═══ 09 · สาขา ══════════════════════════════════════════════════════ -->
-<section class="sec sec-light" id="branches">
+<!-- ═══ 09 · ที่ตั้งร้าน ═════════════════════════════════════════════ -->
+<section class="sec sec-light" id="location">
   <div class="shell">
     <div class="sechead reveal">
-      <p class="eyebrow">สาขา</p>
-      <h2>สองสาขาในสมุทรปราการ</h2>
-      <p class="lede">เลือกสาขาที่เดินทางสะดวกกว่า ราคาและบริการเหมือนกันทั้งสองที่</p>
+      <p class="eyebrow">ที่ตั้งร้าน</p>
+      <h2>อยู่ใกล้สถานี BTS เคหะฯ</h2>
+      <p class="lede">เดินจากสถานีถึงหน้าร้านประมาณ 3 นาที<sup>2</sup> มาถึงแล้ววอล์คอินได้เลย หรือทักไลน์บอกเวลาที่จะมาไว้ก่อนก็ได้</p>
     </div>
 
-    <div class="grid-branch">
-      <article class="branch reveal">
-        <img src="assets/img/placeholder/branch-keha.svg" alt="หน้าร้าน 511 SALON สาขา BTS เคหะฯ" width="1200" height="800" loading="lazy" decoding="async">
-        <div class="body">
-          <h3>สาขา BTS เคหะฯ</h3>
-          <!-- TODO(ยืนยัน): ที่อยู่เต็ม + รหัสไปรษณีย์ + จุดสังเกต + ที่จอดรถ -->
-          <address>ใกล้สถานี BTS เคหะสมุทรปราการ<br>อ.เมืองสมุทรปราการ จ.สมุทรปราการ</address>
-          <dl class="rows">
-            <dt>โทร</dt><dd><a href="tel:+66632649642" data-ev="click_phone" data-ev-where="branch_keha">063-264-9642</a></dd>
-            <dt>เวลา</dt><dd class="num">ทุกวัน 9:00–20:00 น.</dd>
-            <dt>เดินทาง</dt><dd>เดินจากสถานี BTS เคหะฯ ประมาณ 3 นาที<sup>2</sup></dd>
-          </dl>
-          <div class="acts">
-            <a class="btn btn-line btn-sm" href="https://line.me/R/ti/p/@511salon" rel="noopener" data-ev="click_line" data-ev-where="branch_keha">จองสาขานี้</a>
-            <!-- TODO(ยืนยัน): เปลี่ยนเป็นลิงก์ Google Maps ของสาขาจริง -->
-            <a class="btn btn-ghost-l btn-sm" href="https://maps.google.com/?q=511+SALON+เคหะสมุทรปราการ" rel="noopener" data-ev="click_map" data-ev-where="branch_keha">เปิดใน Google Maps</a>
-          </div>
+    <article class="branch branch-one reveal">
+      <img src="assets/img/placeholder/branch-keha.svg" alt="หน้าร้าน 511 SALON ใกล้สถานี BTS เคหะสมุทรปราการ" width="1200" height="800" loading="lazy" decoding="async">
+      <div class="body">
+        <h3>511 SALON</h3>
+        <!-- TODO(ยืนยัน): ที่อยู่เต็ม + รหัสไปรษณีย์ + จุดสังเกตข้างร้าน + ที่จอดรถ -->
+        <address>ใกล้สถานี BTS เคหะสมุทรปราการ<br>อ.เมืองสมุทรปราการ จ.สมุทรปราการ</address>
+        <dl class="rows">
+          <dt>โทร</dt><dd><a href="tel:+66632649642" data-ev="click_phone" data-ev-where="location">063-264-9642</a></dd>
+          <dt>ไลน์</dt><dd><a href="https://line.me/R/ti/p/@511salon" rel="noopener" data-ev="click_line" data-ev-where="location">@511salon</a></dd>
+          <dt>เวลา</dt><dd class="num">ทุกวัน 9:00–20:00 น.</dd>
+          <dt>เดินทาง</dt><dd>ลง BTS เคหะฯ แล้วเดินประมาณ 3 นาที<sup>2</sup></dd>
+        </dl>
+        <div class="acts">
+          <a class="btn btn-line btn-sm" href="https://line.me/R/ti/p/@511salon" rel="noopener" data-ev="click_line" data-ev-where="location">ทักไลน์จองคิว</a>
+          <!-- TODO(ยืนยัน): เปลี่ยนเป็นลิงก์ Google Maps ของร้านจริง -->
+          <a class="btn btn-ghost-l btn-sm" href="https://maps.google.com/?q=511+SALON+เคหะสมุทรปราการ" rel="noopener" data-ev="click_map" data-ev-where="location">เปิดใน Google Maps</a>
         </div>
-      </article>
-
-      <article class="branch reveal reveal-d1">
-        <img src="assets/img/placeholder/branch-bangpu.svg" alt="หน้าร้าน 511 SALON สาขาบางปู" width="1200" height="800" loading="lazy" decoding="async">
-        <div class="body">
-          <h3>สาขาบางปู–ตำหรุ</h3>
-          <!-- TODO(ยืนยัน): ที่อยู่เต็ม + รหัสไปรษณีย์ + จุดสังเกต + ที่จอดรถ -->
-          <address>ย่านบางปูใหม่–ตำหรุ<br>อ.เมืองสมุทรปราการ จ.สมุทรปราการ</address>
-          <dl class="rows">
-            <dt>โทร</dt><dd><a href="tel:+66944249394" data-ev="click_phone" data-ev-where="branch_bangpu">094-424-9394</a></dd>
-            <dt>เวลา</dt><dd class="num">ทุกวัน 9:00–20:00 น.</dd>
-            <dt>เดินทาง</dt><dd>มีที่จอดรถหน้าร้าน</dd>
-          </dl>
-          <div class="acts">
-            <a class="btn btn-line btn-sm" href="https://line.me/R/ti/p/@511salon" rel="noopener" data-ev="click_line" data-ev-where="branch_bangpu">จองสาขานี้</a>
-            <a class="btn btn-ghost-l btn-sm" href="https://maps.google.com/?q=511+SALON+บางปู" rel="noopener" data-ev="click_map" data-ev-where="branch_bangpu">เปิดใน Google Maps</a>
-          </div>
-        </div>
-      </article>
-    </div>
+      </div>
+    </article>
   </div>
 </section>
 
@@ -540,8 +495,7 @@
     <p class="lede reveal reveal-d1">ทักไลน์มาพร้อมรูปผมตอนนี้ เราประเมินให้ก่อนว่าทำอะไรได้บ้าง ใช้เวลาเท่าไร และราคาเท่าไร ก่อนที่จะเดินทางมา</p>
     <div class="btns reveal reveal-d2">
       <a class="btn btn-line" href="https://line.me/R/ti/p/@511salon" rel="noopener" data-ev="click_line" data-ev-where="cta">ทักไลน์ @511salon</a>
-      <a class="btn btn-ghost-d" href="tel:+66632649642" data-ev="click_phone" data-ev-where="cta">โทรสาขาเคหะฯ</a>
-      <a class="btn btn-ghost-d" href="tel:+66944249394" data-ev="click_phone" data-ev-where="cta">โทรสาขาบางปู</a>
+      <a class="btn btn-ghost-d" href="tel:+66632649642" data-ev="click_phone" data-ev-where="cta">โทร 063-264-9642</a>
     </div>
   </div>
 </section>
@@ -554,7 +508,7 @@
     <div class="foot-grid">
       <div>
         <a class="brand" href="#top">5<b>1</b>1 SALON</a>
-        <p style="margin-top:14px;max-width:30ch">ร้านทำผมสมุทรปราการ รับซ่อมผมเสียจากการฟอกและดัด เปิดทุกวัน 9 โมง</p>
+        <p style="margin-top:14px;max-width:30ch">ร้านทำผมสมุทรปราการ รับซ่อมผมเสียจากการฟอกและดัด ใกล้ BTS เคหะฯ เปิดทุกวัน 9 โมง</p>
       </div>
       <div>
         <h3>บริการ</h3>
@@ -568,18 +522,11 @@
         </ul>
       </div>
       <div>
-        <h3>สาขา BTS เคหะฯ</h3>
+        <h3>ร้านอยู่ที่ไหน</h3>
         <address>
+          ใกล้สถานี BTS เคหะสมุทรปราการ<br>
           อ.เมืองสมุทรปราการ จ.สมุทรปราการ<br>
           <a href="tel:+66632649642">063-264-9642</a><br>
-          ทุกวัน 9:00–20:00 น.
-        </address>
-      </div>
-      <div>
-        <h3>สาขาบางปู–ตำหรุ</h3>
-        <address>
-          อ.เมืองสมุทรปราการ จ.สมุทรปราการ<br>
-          <a href="tel:+66944249394">094-424-9394</a><br>
           ทุกวัน 9:00–20:00 น.
         </address>
       </div>
@@ -588,8 +535,7 @@
         <ul>
           <li><a href="https://line.me/R/ti/p/@511salon" rel="noopener" data-ev="click_line" data-ev-where="footer">LINE @511salon</a></li>
           <li><a href="https://www.facebook.com/p/511-SALON-61558333424240/" rel="noopener">Facebook</a></li>
-          <li><a href="https://www.tiktok.com/@511.salon" rel="noopener">TikTok สาขาเคหะฯ</a></li>
-          <li><a href="https://www.tiktok.com/@511salon.bangpu" rel="noopener">TikTok สาขาบางปู</a></li>
+          <li><a href="https://www.tiktok.com/@511.salon" rel="noopener">TikTok</a></li>
         </ul>
       </div>
     </div>

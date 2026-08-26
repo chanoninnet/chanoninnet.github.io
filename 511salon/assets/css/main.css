@@ -313,12 +313,18 @@ section[id]{scroll-margin-top:calc(var(--nav-h) + 8px)}
 .reasons h3{color:var(--snow);margin-bottom:6px}
 .reasons p{font-size:var(--t-sm);color:var(--snow-2)}
 
-/* ---------- branches ----------------------------------------------------- */
-.grid-branch{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+/* ---------- ที่ตั้งร้าน --------------------------------------------------- */
 .branch{background:var(--porcelain);border:1px solid var(--rule-light);
   border-radius:var(--r-card);overflow:hidden;display:flex;flex-direction:column}
 .branch img{aspect-ratio:3/2;object-fit:cover;width:100%}
 .branch .body{padding:24px;display:flex;flex-direction:column;gap:12px;flex:1}
+/* ร้านมีที่เดียว การ์ดใบเดียวยืดเต็มความกว้างจะดูโหวง จึงวางภาพคู่ข้อมูลแทน */
+.branch.branch-one{display:grid;grid-template-columns:minmax(0,1fr)}
+@media (min-width:861px){
+  .branch.branch-one{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+  .branch.branch-one img{height:100%;aspect-ratio:auto;min-height:340px}
+}
+.branch.branch-one .body{padding:clamp(26px,3.2vw,40px);justify-content:center;gap:14px}
 .branch address{font-style:normal;font-size:var(--t-sm);color:var(--ink-2);line-height:1.65}
 .branch .rows{display:grid;grid-template-columns:auto 1fr;gap:7px 16px;font-size:var(--t-sm);margin:0}
 .branch .rows dt{font-family:var(--f-mono);font-size:var(--t-xs);letter-spacing:.08em;
